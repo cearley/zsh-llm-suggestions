@@ -163,3 +163,4 @@ zsh-llm-suggestions/
 Notes:
 - `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`.
 - The OpenAI backend honors `ZSH_LLM_DISABLE_PYGMENTS` to produce deterministic, uncolored output during tests.
+- When troubleshooting a workflow using `act`, you can cut down the output 'noise' by using the flag -q, --quiet to disable logging of output from steps.
