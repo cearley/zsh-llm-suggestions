@@ -2,8 +2,6 @@
 
 import os
 import sys
-import shutil
-
 
 MISSING_PREREQUISITES = "zsh-llm-suggestions missing prerequisites:"
 
@@ -38,11 +36,7 @@ def main():
     try:
         import openai
     except ImportError:
-        # Check if uv is available and suggest uv-based installation
-        if shutil.which('uv'):
-            print(f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && uv add openai')
-        else:
-            print(f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && pip3 install openai')
+        print(f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && pip3 install openai')
         sys.exit(1)
 
     api_key = os.environ.get('OPENAI_API_KEY')
