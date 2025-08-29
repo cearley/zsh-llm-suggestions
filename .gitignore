@@ -141,6 +141,13 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# Test environment files
+.env
+
+# uv virtual environment
+.venv/
+uv.lock
+
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/

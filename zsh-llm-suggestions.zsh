@@ -29,7 +29,16 @@ zsh_llm_suggestions_run_query() {
   local query="$2"
   local result_file="$3"
   local mode="$4"
-  echo -n "$query" | eval $llm $mode > $result_file
+
+  # Use uv run python if uv is available, otherwise fall back to python3
+  local python_cmd
+  if command -v uv &> /dev/null; then
+    python_cmd="uv run python"
+  else
+    python_cmd="python3"
+  fi
+
+  echo -n "$query" | eval "$python_cmd $llm $mode" > $result_file
 }
 
 zsh_llm_completion() {

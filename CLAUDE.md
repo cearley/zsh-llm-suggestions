@@ -28,17 +28,57 @@ The project consists of several key components:
 
 ## Prerequisites and Setup
 
+### Development Environment (Recommended: uv)
+This project uses `uv` for fast, reliable Python dependency management with isolated environments:
+
+```bash
+# Install uv: https://docs.astral.sh/uv/
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Setup project
+uv sync --dev  # Creates .venv with openai + pygments automatically
+
+# Test environment will automatically detect and use uv
+./test-environment.sh
+```
+
 ### OpenAI Backend
-- Requires `OPENAI_API_KEY` environment variable
-- Requires `pip3 install openai`
-- Optional: `pip3 install pygments` for syntax-highlighted explanations
+- **API Key**: Set `OPENAI_API_KEY` environment variable or create `.env` file
+- **Dependencies**: Automatically managed by `uv sync --dev`
+  - `openai>=1.0.0` (required)
+  - `pygments>=2.10.0` (optional, for syntax-highlighted explanations)
 
 ### GitHub Copilot Backend  
-- Requires GitHub CLI: `gh` command available
-- Requires authentication: `gh auth login --web -h github.com`
-- Requires Copilot extension: `gh extension install github/gh-copilot`
+- **GitHub CLI**: `gh` command available
+- **Authentication**: `gh auth login --web -h github.com`
+- **Extension**: `gh extension install github/gh-copilot`
+
+### Legacy Setup (System Python)
+If you prefer system-wide installation:
+- `pip3 install openai`
+- `pip3 install pygments` (optional)
+- Export `OPENAI_API_KEY` in your shell
 
 ## Testing
+
+### Unit and Integration Tests
+
+- Unit tests live in `tests/test_openai_unit.py` and do not require network or API keys.
+- Integration tests live in `tests/test_openai_integration.py` and make real API calls.
+- Use `uv run pytest` to run tests; integration tests will be auto-skipped if `OPENAI_API_KEY` is not set or if `SKIP_INTEGRATION_TESTS=1`.
+- Coverage HTML output is generated to `htmlcov/` when running with `--cov`.
+
+Example commands:
+```bash
+uv run pytest -q                       # run all (integration auto-skip w/o key)
+SKIP_INTEGRATION_TESTS=1 uv run pytest # force-skip integration
+uv run pytest --cov=. --cov-report=html && open htmlcov/index.html
+```
+
+Environment variables used by tests:
+- `OPENAI_API_KEY`: required for integration tests (can be populated from `.env`)
+- `SKIP_INTEGRATION_TESTS`: set to `1|true|yes` to skip integration tests
+- `ZSH_LLM_DISABLE_PYGMENTS`: set to `1|true|yes` to disable ANSI formatting for predictable test output
 
 ### GitHub Actions CI
 The project includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs smoke tests including:
@@ -68,7 +108,18 @@ act -l
 ```
 
 ### Manual Testing
-The project also includes demo files in the `demo/` directory that show example interactions. Manual testing is done by using the plugin interactively in a zsh shell.
+The project includes a comprehensive manual testing environment:
+
+```bash
+./test-environment.sh  # Automatically detects uv or system python
+```
+
+This creates an isolated zsh session with:
+- Pre-configured key bindings (Ctrl+O, Ctrl+P, etc.)
+- Environment variable management via `.env` file
+- Direct testing aliases for debugging
+- Automatic dependency validation
+- Clean temporary session that doesn't affect your main shell configuration
 
 ## Key Implementation Details
 
@@ -82,9 +133,33 @@ The project also includes demo files in the `demo/` directory that show example 
 
 ## File Structure
 
-- `zsh-llm-suggestions.zsh`: Main plugin file to be sourced in `.zshrc`
-- `zsh-llm-suggestions-openai.py`: OpenAI backend
-- `zsh-llm-suggestions-github-copilot.py`: GitHub Copilot backend  
-- `demo/`: Example usage demonstrations
-- `README.md`: Installation and usage instructions
-- To test the Github workflow files locally, use `act`
+```
+zsh-llm-suggestions/
+├── .venv/                           # uv-managed virtual environment (auto-created)
+├── pyproject.toml                   # Project configuration and dependencies  
+├── uv.lock                          # Dependency lockfile (auto-generated)
+├── zsh-llm-suggestions.zsh          # Main plugin file to be sourced in `.zshrc`
+├── zsh-llm-suggestions-openai.py    # OpenAI backend
+├── zsh-llm-suggestions-github-copilot.py  # GitHub Copilot backend
+├── test-environment.sh              # Comprehensive manual testing environment
+├── .env                             # API keys and environment variables (create from .env.example)
+├── .env.example                     # Environment variable template
+├── demo/                            # Example usage demonstrations
+├── CLAUDE.md                        # AI development documentation (this file)
+├── SECURITY_AUDIT.md                # Security vulnerability assessment
+└── README.md                        # Installation and usage instructions
+```
+
+### Development Workflow Commands
+
+- Setup: `uv sync --dev` (creates isolated environment)
+- Unit tests: `uv run pytest -q -k unit`
+- Integration tests: `uv run pytest -q -k integration` (requires OPENAI_API_KEY)
+- Skip integration: `SKIP_INTEGRATION_TESTS=1 uv run pytest -q`
+- Coverage: `uv run pytest --cov=. --cov-report=html`
+- Manual tests: `./test-environment.sh`
+- CI: `act --container-architecture linux/amd64` (local workflow testing)
+
+Notes:
+- `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`.
+- The OpenAI backend honors `ZSH_LLM_DISABLE_PYGMENTS` to produce deterministic, uncolored output during tests.

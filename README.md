@@ -8,6 +8,21 @@
 [![Shell](https://img.shields.io/badge/shell-zsh-blue.svg)](https://www.zsh.org/)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 
+## Table of Contents
+
+- [About This Fork](#about-this-fork)
+- [Original Documentation](#original-documentation)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Warning](#warning)
+- [Supported LLMs](#supported-llms)
+- [Development Setup (Fork Enhancement)](#development-setup-fork-enhancement)
+- [Manual Testing (Fork Enhancement)](#manual-testing-fork-enhancement)
+- [Automated Tests (Fork Enhancement)](#automated-tests)
+- [Contributing](#contributing)
+
+---
+
 ## About This Fork
 
 **⚠️ Development Status: Not recommended for production use**
@@ -135,3 +150,229 @@ There are some risks using `zsh-llm-suggestions`:
 Right now, two LLMs are supported:
 1. GitHub Copilot (via GitHub CLI). Requires a GitHub Copilot subscription.
 2. OpenAI. Requires an OpenAI API key. Currently uses `gpt-4-1106-preview`.
+
+---
+
+*End of original documentation. Fork-specific additions below:*
+
+## Development Setup (Fork Enhancement)
+
+This fork uses modern Python tooling for development. The recommended setup uses `uv` for fast, reliable dependency management with isolated environments.
+
+### Prerequisites
+
+- **zsh shell** (for testing the plugin functionality)
+- **Python 3.8+** (managed via uv or system installation)
+- **uv** (recommended) - Install from [https://docs.astral.sh/uv/](https://docs.astral.sh/uv/)
+
+### Recommended Development Workflow
+
+**🚀 Using `uv` (Recommended)**
+
+1. **Clone and setup:**
+   ```bash
+   git clone https://github.com/cearley/zsh-llm-suggestions.git
+   cd zsh-llm-suggestions
+   ```
+
+2. **Initialize development environment:**
+   ```bash
+   uv sync --dev  # Creates .venv with openai + pygments
+   ```
+
+3. **Set up API keys:**
+   ```bash
+   # Option A: Export in your shell
+   export OPENAI_API_KEY="your_openai_api_key_here"
+   
+   # Option B: Create .env file (excluded from git)
+   cp .env.example .env
+   # Edit .env and set OPENAI_API_KEY=your_actual_api_key
+   ```
+
+4. **Run tests:**
+   ```bash
+   ./test-environment.sh  # Automatically detects and uses uv environment
+   ```
+
+**📦 Alternative: System Python**
+
+If you prefer system-wide installation:
+
+```bash
+pip3 install openai
+pip3 install pygments  # optional, for syntax highlighting
+export OPENAI_API_KEY="your_openai_api_key_here"
+./test-environment.sh
+```
+
+### Development Features
+
+- **Isolated environments**: uv creates project-specific `.venv` automatically
+- **Fast installs**: uv is significantly faster than pip for dependency resolution
+- **Lockfile support**: `uv.lock` ensures reproducible builds
+- **Development dependencies**: Includes optional packages like `pygments` for enhanced functionality
+- **Automatic detection**: Test scripts automatically detect and use uv when available
+
+### Project Structure
+
+```
+zsh-llm-suggestions/
+├── .venv/                    # uv-managed virtual environment (auto-created)
+├── pyproject.toml           # Project configuration and dependencies
+├── uv.lock                  # Dependency lockfile (auto-generated)
+├── zsh-llm-suggestions.zsh  # Main plugin file
+├── *-openai.py              # OpenAI backend
+├── *-github-copilot.py      # GitHub Copilot backend
+├── test-environment.sh      # Comprehensive manual testing
+└── .env                     # API keys (create from .env.example)
+```
+
+### Contributing
+
+## Automated Tests (Fork Enhancement)
+
+This fork includes both unit and integration tests. You can run them with uv (recommended) or system Python.
+
+- Prerequisites:
+  - For unit tests: no API key required.
+  - For integration tests: set OPENAI_API_KEY or create a .env file from .env.example.
+  - Optional: set ZSH_LLM_DISABLE_PYGMENTS=1 to disable ANSI formatting during tests.
+
+### Quick start with uv
+```bash
+uv run pytest -q          # run unit + integration tests (integration auto-skips without API key)
+uv run pytest -q -k unit  # run only unit tests
+uv run pytest -q -k integration  # run only integration tests
+
+# Skip integration tests explicitly
+SKIP_INTEGRATION_TESTS=1 uv run pytest -q
+
+# Generate coverage HTML report
+uv run pytest --cov=. --cov-report=html
+open htmlcov/index.html
+```
+
+### Using system Python
+```bash
+python3 -m pip install -r requirements-dev.txt  # if available, or install pytest, coverage
+python3 -m pytest -q
+```
+
+### Test files
+- tests/test_openai_unit.py — fast unit tests for parsing, error handling, and highlighting
+- tests/test_openai_integration.py — real API calls to OpenAI; auto-skipped without OPENAI_API_KEY or if SKIP_INTEGRATION_TESTS=1
+
+### Helpful scripts
+- run-tests.sh — convenience wrapper to execute the tests and generate coverage
+- test-environment.sh — launches a manual testing zsh session
+
+1. **Fork the repository** on GitHub
+2. **Create feature branch:** `git checkout -b feature/your-feature-name`  
+3. **Setup development environment:** `uv sync --dev`
+4. **Make changes and test:** `./test-environment.sh`
+5. **Run CI locally:** `act --container-architecture linux/amd64` (requires [act](https://github.com/nektos/act))
+6. **Commit and push:** Follow conventional commit format
+7. **Create pull request:** Include description of changes and testing performed
+
+### Why uv?
+
+- **Speed**: 10-100x faster than pip for dependency resolution and installation
+- **Reliability**: Consistent, reproducible environments across machines
+- **Modern**: Built with Rust, follows latest Python packaging standards
+- **Zero-config**: Works out of the box with minimal setup
+- **Compatibility**: Drop-in replacement for pip/venv workflows
+
+## Manual Testing (Fork Enhancement)
+
+This fork includes a comprehensive manual testing environment for validating functionality before deployment.
+
+### Quick Test Setup
+
+1. **Set up your OpenAI API key** (choose one option):
+   
+   **Option A - Use existing environment variable:**
+   ```bash
+   # If you already have OPENAI_API_KEY exported in your shell, you're ready to go!
+   ```
+   
+   **Option B - Use .env file:**
+   ```bash
+   cp .env.example .env
+   # Edit .env and set OPENAI_API_KEY=your_actual_api_key
+   ```
+
+2. **Install dependencies** (choose your preferred method):
+
+   **🚀 Recommended: Using `uv` (isolated environment):**
+   ```bash
+   # Install uv if you haven't already: https://docs.astral.sh/uv/
+   uv sync --dev  # Installs openai + pygments in isolated .venv
+   ```
+
+   **📦 Alternative: Using pip (system-wide):**
+   ```bash
+   pip3 install openai
+   pip3 install pygments  # optional, for syntax highlighting
+   ```
+
+3. **Launch test environment:**
+   ```bash
+   ./test-environment.sh  # Auto-detects uv or falls back to system python
+   ```
+
+### What the Test Environment Provides
+
+- **🔒 Isolated zsh session** with all key bindings pre-configured
+- **🔑 Environment variable management** via `.env` file (excluded from git)
+- **✅ Dependency validation** for Python, openai package, and optional components
+- **🎯 Pre-configured key bindings** exactly as documented in the main README
+- **🧪 Direct testing aliases** for bypassing zsh integration when debugging
+- **🧹 Automatic cleanup** of temporary files when session ends
+
+### Available Test Commands
+
+Once in the test environment, try these key combinations:
+
+| Key Binding | Function | Example |
+|-------------|----------|---------|
+| `Ctrl + O` | OpenAI command suggestions | Type "list files recursively" then press Ctrl+O |
+| `Ctrl + Alt + O` | OpenAI command explanations | Type "find . -name '*.py'" then press Ctrl+Alt+O |
+| `Ctrl + P` | GitHub Copilot suggestions | Type "compress all log files" then press Ctrl+P |
+| `Ctrl + Alt + P` | GitHub Copilot explanations | Type "tar -czf logs.tar.gz *.log" then press Ctrl+Alt+P |
+
+### Testing Aliases
+
+The test environment includes helpful aliases for debugging:
+
+```bash
+# Test OpenAI API directly (bypasses zsh integration)
+test-openai-direct
+
+# Test OpenAI explanation directly  
+test-openai-explain
+```
+
+### Example Test Scenarios
+
+Try these natural language prompts in the test environment:
+
+- **File operations**: "find all python files modified today"
+- **System monitoring**: "show memory usage and top processes"  
+- **Archive management**: "extract all zip files in current directory"
+- **Permission management**: "make all shell scripts executable"
+- **Network diagnostics**: "check if port 8080 is open"
+
+### Troubleshooting Test Environment
+
+If you encounter issues:
+
+1. **Missing API key**: The script will create a template `.env` file if none exists
+2. **Python dependencies**: The script validates all required packages and provides installation commands
+3. **GitHub CLI issues**: GitHub Copilot functionality requires `gh cli` and the copilot extension
+4. **Key binding conflicts**: The test environment uses a clean zsh session to avoid conflicts
+
+### Exit Test Environment
+
+- Press `Ctrl + D` or type `exit` to return to your normal shell
+- All temporary files are automatically cleaned up on exit
