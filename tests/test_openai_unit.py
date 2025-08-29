@@ -15,6 +15,13 @@ from io import StringIO
 # Add the parent directory to the path to import the script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Helper function to get the script path dynamically
+def get_openai_script_path():
+    """Get the path to zsh-llm-suggestions-openai.py relative to this test file"""
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(test_dir)
+    return os.path.join(project_root, 'zsh-llm-suggestions-openai.py')
+
 
 class TestOpenAIMarkdownParsing(unittest.TestCase):
     """Test the markdown parsing logic that was recently fixed"""
@@ -41,7 +48,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         # Import and run
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         
         # Mock sys.argv for generate mode
@@ -64,7 +71,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         
         with patch.object(sys, 'argv', ['script.py', 'generate']):
@@ -85,7 +92,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         
         with patch.object(sys, 'argv', ['script.py', 'generate']):
@@ -106,7 +113,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         
         with patch.object(sys, 'argv', ['script.py', 'generate']):
@@ -126,7 +133,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
                     
                     import importlib.util
                     spec = importlib.util.spec_from_file_location("openai_script", 
-                        "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+                        get_openai_script_path())
                     openai_script = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(openai_script)
                     try:
@@ -144,7 +151,7 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         with patch.object(sys, 'argv', ['script.py', 'invalid_mode']):
             import importlib.util
             spec = importlib.util.spec_from_file_location("openai_script", 
-                "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+                get_openai_script_path())
             openai_script = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(openai_script)
             try:
@@ -162,7 +169,7 @@ class TestHighlightFunction(unittest.TestCase):
         """Test highlight function when pygments is available"""
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(openai_script)
         
@@ -177,7 +184,7 @@ class TestHighlightFunction(unittest.TestCase):
         """Test highlight function when pygments is disabled via env var"""
         import importlib.util
         spec = importlib.util.spec_from_file_location("openai_script", 
-            "/Users/craig/work/zsh-llm-suggestions/zsh-llm-suggestions-openai.py")
+            get_openai_script_path())
         openai_script = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(openai_script)
         
