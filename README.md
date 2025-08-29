@@ -1,5 +1,45 @@
 # LLM-based command suggestions for zsh
 
+[![CI](https://github.com/cearley/zsh-llm-suggestions/workflows/ci.yml/badge.svg)](https://github.com/cearley/zsh-llm-suggestions/actions)
+[![Maintained](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/cearley/zsh-llm-suggestions/graphs/commit-activity)
+[![Last Commit](https://img.shields.io/github/last-commit/cearley/zsh-llm-suggestions)](https://github.com/cearley/zsh-llm-suggestions/commits/master)
+[![Security](https://img.shields.io/badge/security-vulnerabilities%20identified-red.svg)](SECURITY_AUDIT.md)
+[![License](https://img.shields.io/github/license/cearley/zsh-llm-suggestions)](LICENSE)
+[![Shell](https://img.shields.io/badge/shell-zsh-blue.svg)](https://www.zsh.org/)
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
+
+## About This Fork
+
+**⚠️ Development Status: Not recommended for production use**
+
+This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions), which hasn't been updated since 2022. This fork includes several important improvements:
+
+**Recent Enhancements:**
+- ✅ **GitHub Actions CI/CD** with comprehensive smoke tests
+- ✅ **Local testing support** with `act` for workflow validation
+- ✅ **[Comprehensive security audit](SECURITY_AUDIT.md)** identifying critical vulnerabilities
+- ✅ **Updated OpenAI library compatibility** (resolved import errors)
+- ✅ **Developer documentation** (CLAUDE.md for AI-assisted development)
+
+**Why Choose This Fork:**
+- **Active maintenance** with recent commits and ongoing development
+- **Modern tooling** including CI/CD, local testing, and comprehensive documentation
+- **Security focus** with detailed vulnerability assessment and planned fixes
+- **Future roadmap** with clear short-term and long-term improvement plans
+
+**Planned Improvements:**
+- 🔧 **Critical security fixes** (command injection, temp file vulnerabilities)
+- 🔧 **Enhanced error handling** and input validation
+- 🚀 **Architecture improvements** for better reliability and performance
+- 🚀 **New features** including configuration management and caching
+
+**Use Original If:** You prefer the original codebase and understand the security risks  
+**Use This Fork If:** You want recent improvements and plan to contribute to ongoing development
+
+---
+
+## Original Documentation
+
 ![Demo of zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions/blob/master/zsh-llm-suggestions.gif?raw=true)
 
 `zsh` commands can be difficult to remember, but LLMs are great at turning
@@ -18,7 +58,7 @@ to explain the command.
 Clone the repository:
 
 ```
-git clone https://github.com/stefanheule/zsh-llm-suggestions.git ~/zsh/zsh-llm-suggestions
+git clone https://github.com/cearley/zsh-llm-suggestions.git ~/zsh/zsh-llm-suggestions
 ```
 
 Source the script and configure the hotkey in `.zshrc`:

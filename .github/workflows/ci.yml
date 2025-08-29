@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install base dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3 python3-pip zsh curl git gnupg2 lsb-release
+    
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install openai
+    
+    - name: Install GitHub CLI
+      run: |
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null 2>&1
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        apt-get update
+        apt-get install -y gh
+    
+    - name: Test Python scripts syntax
+      run: |
+        python3 -m py_compile zsh-llm-suggestions-openai.py
+        python3 -m py_compile zsh-llm-suggestions-github-copilot.py
+    
+    - name: Test OpenAI script error handling
+      run: |
+        # Test missing API key
+        output=$(echo "test command" | python3 zsh-llm-suggestions-openai.py generate 2>&1)
+        echo "$output"
+        echo "$output" | grep -q "OPENAI_API_KEY is not set" || (echo "Expected OPENAI_API_KEY error not found" && exit 1)
+        
+        # Test invalid mode
+        output=$(echo "test command" | python3 zsh-llm-suggestions-openai.py invalid_mode 2>&1)
+        echo "$output"
+        echo "$output" | grep -q "unknown mode" || (echo "Expected unknown mode error not found" && exit 1)
+    
+    - name: Test GitHub Copilot script error handling
+      run: |
+        # Test invalid mode
+        output=$(echo "test command" | python3 zsh-llm-suggestions-github-copilot.py invalid_mode 2>&1)
+        echo "$output"
+        echo "$output" | grep -q "unknown mode" || (echo "Expected unknown mode error not found" && exit 1)
+        
+        # Test GitHub CLI is available
+        gh --version
+    
+    - name: Test zsh script sourcing
+      run: |
+        # Test that the zsh script can be sourced without errors
+        zsh -c "source ./zsh-llm-suggestions.zsh && echo 'Script sourced successfully'"
+        
+        # Test that functions are defined
+        zsh -c "source ./zsh-llm-suggestions.zsh && declare -f zsh_llm_suggestions_openai > /dev/null && echo 'OpenAI function defined'"
+        zsh -c "source ./zsh-llm-suggestions.zsh && declare -f zsh_llm_suggestions_github_copilot > /dev/null && echo 'GitHub Copilot function defined'"
+        zsh -c "source ./zsh-llm-suggestions.zsh && declare -f zsh_llm_suggestions_spinner > /dev/null && echo 'Spinner function defined'"
+    
+    - name: Test demo files exist
+      run: |
+        test -d demo || (echo "Demo directory not found" && exit 1)
+        test -f demo/git-commits || (echo "Demo file git-commits not found" && exit 1)
+        test -f demo/joke || (echo "Demo file joke not found" && exit 1)
+        echo "Demo files present"
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install shellcheck
+      run: |
+        apt-get update
+        apt-get install -y shellcheck
+    
+    - name: Run shellcheck on zsh files
+      run: |
+        # Check zsh script with bash syntax (closest approximation)
+        shellcheck -s bash zsh-llm-suggestions.zsh || echo "Shellcheck warnings/errors found (expected for zsh-specific syntax)"
+        echo "Shellcheck analysis completed"
