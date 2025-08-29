@@ -1,6 +1,6 @@
 # LLM-based command suggestions for zsh
 
-[![CI](https://github.com/cearley/zsh-llm-suggestions/workflows/ci.yml/badge.svg)](https://github.com/cearley/zsh-llm-suggestions/actions)
+[![CI](https://github.com/cearley/zsh-llm-suggestions/actions/workflows/ci.yml/badge.svg)](https://github.com/cearley/zsh-llm-suggestions/actions)
 [![Maintained](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/cearley/zsh-llm-suggestions/graphs/commit-activity)
 [![Last Commit](https://img.shields.io/github/last-commit/cearley/zsh-llm-suggestions)](https://github.com/cearley/zsh-llm-suggestions/commits/master)
 [![Security](https://img.shields.io/badge/security-vulnerabilities%20identified-red.svg)](SECURITY_AUDIT.md)
@@ -12,7 +12,7 @@
 
 **⚠️ Development Status: Not recommended for production use**
 
-This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions), which hasn't been updated since 2022. This fork includes several important improvements:
+This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions), which hasn't been actively maintained. This fork includes several important improvements:
 
 **Recent Enhancements:**
 - ✅ **GitHub Actions CI/CD** with comprehensive smoke tests
