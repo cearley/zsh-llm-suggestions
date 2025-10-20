@@ -26,7 +26,7 @@ The project consists of several key components:
 4. Spinner animation shows while waiting for LLM response
 5. Original query gets added to shell history
 6. Command line buffer replaced with suggested command
-7. For explanations (Ctrl+Alt+O/P), output is displayed below prompt instead
+7. For explanations (Ctrl+X then O/P), output is displayed below prompt instead
 
 ## Prerequisites and Setup
 
@@ -83,11 +83,21 @@ Environment variables used by tests:
 - `ZSH_LLM_DISABLE_PYGMENTS`: set to `1|true|yes` to disable ANSI formatting for predictable test output
 
 ### GitHub Actions CI
-The project includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs smoke tests including:
+The project includes multiple GitHub Actions workflows:
+
+**CI Workflow** (`.github/workflows/ci.yml`):
 - Python script syntax validation
 - Error handling verification
 - Zsh script sourcing and function definition checks
 - Dependency availability tests
+
+**Auto-Release Workflow** (`.github/workflows/auto-release.yml`):
+- Triggers after CI succeeds on master
+- Automatically creates releases when version changes
+
+**Manual Release Workflow** (`.github/workflows/manual-release.yml`):
+- Manually triggered via workflow dispatch
+- Backup method for release creation
 
 ### Local Workflow Testing with Act
 To test GitHub Actions workflows locally before pushing, use [act](https://github.com/nektos/act):
@@ -96,17 +106,21 @@ To test GitHub Actions workflows locally before pushing, use [act](https://githu
 # Install act (if not already installed)
 # See https://nektosact.com/ for installation instructions
 
-# Run workflows locally (use linux/amd64 for Apple Silicon compatibility)
+# Run all workflows locally (use linux/amd64 for Apple Silicon compatibility)
 act --container-architecture linux/amd64
 
 # Run specific workflow
 act --container-architecture linux/amd64 -W .github/workflows/ci.yml
+act --container-architecture linux/amd64 -W .github/workflows/auto-release.yml
 
 # Run specific job
 act --container-architecture linux/amd64 -j test
 
 # List available workflows
 act -l
+
+# Quiet mode (reduce noise)
+act --container-architecture linux/amd64 -q
 ```
 
 ### Manual Testing
@@ -117,7 +131,7 @@ The project includes a comprehensive manual testing environment:
 ```
 
 This creates an isolated zsh session with:
-- Pre-configured key bindings (Ctrl+O, Ctrl+P, etc.)
+- Pre-configured key bindings (Ctrl+O, Ctrl+P for suggestions; Ctrl+X then O/P for explanations)
 - Environment variable management via `.env` file
 - Direct testing aliases for debugging
 - Automatic dependency validation
@@ -133,34 +147,73 @@ This creates an isolated zsh session with:
 - OpenAI backend strips markdown code blocks from responses
 - GitHub Copilot backend uses complex regex patterns to parse the `gh copilot` CLI output
 
+## Release Management
+
+### Version Configuration
+The project uses **dynamic version management** with a single source of truth:
+- Version is defined ONLY in `src/zsh_llm_suggestions/__init__.py` as `__version__ = "X.Y.Z"`
+- `pyproject.toml` uses `dynamic = ["version"]` to read from `__init__.py`
+- Never hardcode version in `pyproject.toml` - it won't work!
+
+### Automated Release Workflow
+The project includes automated GitHub release creation:
+
+**Auto-Release** (`.github/workflows/auto-release.yml`):
+- Triggers automatically after CI workflow succeeds on master
+- Compares current version in `__init__.py` with latest git tag
+- If version changed: creates tag and GitHub release with auto-generated notes
+- Includes commit history in release notes
+- Smart behavior: If CI fails after version bump, just fix and push again - release triggers once CI passes
+
+**Manual Release** (`.github/workflows/manual-release.yml`):
+- Backup method via GitHub Actions workflow dispatch
+- Allows manual version input and optional `__init__.py` update
+- Useful for hotfixes or when auto-release fails
+
+### Release Process
+1. Update `__version__` in `src/zsh_llm_suggestions/__init__.py`
+2. Commit and push to master
+3. CI runs automatically
+4. If CI passes: Auto-release creates tag and GitHub release
+5. If CI fails: Fix code and push again (no need to re-bump version)
+
+See `RELEASING.md` for complete documentation on release workflows, troubleshooting, and semantic versioning guidelines.
+
 ## File Structure
 
 ```
 zsh-llm-suggestions/
 ├── .venv/                           # uv-managed virtual environment (auto-created)
-├── pyproject.toml                   # Project configuration and dependencies
+├── pyproject.toml                   # Project configuration (dynamic version from __init__.py)
 ├── uv.lock                          # Dependency lockfile (auto-generated)
 ├── zsh-llm-suggestions.zsh          # Symlink to src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh
 ├── src/
 │   └── zsh_llm_suggestions/
-│       ├── __init__.py              # Package metadata
+│       ├── __init__.py              # Package metadata with __version__ (single source of truth)
 │       ├── openai_backend.py        # OpenAI backend
 │       ├── copilot_backend.py       # GitHub Copilot backend
 │       ├── installer.py             # Interactive installer
 │       └── data/
 │           └── zsh-llm-suggestions.zsh  # Main zsh script (source file)
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                   # CI workflow (runs tests)
+│       ├── auto-release.yml         # Automated release after CI success
+│       └── manual-release.yml       # Manual release workflow dispatch
 ├── test-environment.sh              # Comprehensive manual testing environment
 ├── tests/                           # Unit and integration tests
 ├── .env                             # API keys and environment variables (create from .env.example)
 ├── .env.example                     # Environment variable template
 ├── demo/                            # Example usage demonstrations
 ├── CLAUDE.md                        # AI development documentation (this file)
+├── RELEASING.md                     # Release process and workflow documentation
 ├── SECURITY_AUDIT.md                # Security vulnerability assessment
 └── README.md                        # Installation and usage instructions
 ```
 
 ### Development Workflow Commands
 
+**Setup & Testing:**
 - Setup: `uv sync --dev` (creates isolated environment)
 - Unit tests: `uv run pytest -q -k unit`
 - Integration tests: `uv run pytest -q -k integration` (requires OPENAI_API_KEY)
@@ -168,6 +221,12 @@ zsh-llm-suggestions/
 - Coverage: `uv run pytest --cov=. --cov-report=html`
 - Manual tests: `./test-environment.sh`
 - CI: `act --container-architecture linux/amd64` (local workflow testing)
+
+**Release:**
+- Update version: Edit `__version__` in `src/zsh_llm_suggestions/__init__.py`
+- Auto-release: Commit version change and push to master (after CI passes)
+- Manual release: Use GitHub Actions workflow dispatch for `.github/workflows/manual-release.yml`
+- See `RELEASING.md` for complete release documentation
 
 Notes:
 - `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`.
