@@ -166,11 +166,11 @@ export SCRIPT_DIR="${SCRIPT_DIR}"
 
 # Helpful aliases for testing (using proper command execution)
 if [[ "$UV_AVAILABLE" == "true" ]]; then
-    alias test-openai-direct='echo "list files in current directory" | uv run python "\$SCRIPT_DIR/zsh-llm-suggestions-openai.py" generate'
-    alias test-openai-explain='echo "ls -la" | uv run python "\$SCRIPT_DIR/zsh-llm-suggestions-openai.py" explain'
+    alias test-openai-direct='echo "list files in current directory" | uv run python "\$SCRIPT_DIR/src/zsh_llm_suggestions/openai_backend.py" generate'
+    alias test-openai-explain='echo "ls -la" | uv run python "\$SCRIPT_DIR/src/zsh_llm_suggestions/openai_backend.py" explain'
 else
-    alias test-openai-direct='echo "list files in current directory" | python3 "\$SCRIPT_DIR/zsh-llm-suggestions-openai.py" generate'
-    alias test-openai-explain='echo "ls -la" | python3 "\$SCRIPT_DIR/zsh-llm-suggestions-openai.py" explain'
+    alias test-openai-direct='echo "list files in current directory" | python3 "\$SCRIPT_DIR/src/zsh_llm_suggestions/openai_backend.py" generate'
+    alias test-openai-explain='echo "ls -la" | python3 "\$SCRIPT_DIR/src/zsh_llm_suggestions/openai_backend.py" explain'
 fi
 
 # Custom prompt to indicate test mode

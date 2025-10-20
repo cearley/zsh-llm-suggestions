@@ -32,9 +32,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+highlight = [
+    "pygments>=2.10.0",
+]
 dev = [
     "pygments>=2.10.0",
 ]
+
+[project.scripts]
+zsh-llm-openai = "zsh_llm_suggestions.openai_backend:main"
+zsh-llm-copilot = "zsh_llm_suggestions.copilot_backend:main"
+zsh-llm-install = "zsh_llm_suggestions.installer:install"
+zsh-llm-uninstall = "zsh_llm_suggestions.installer:uninstall"
+zsh-llm-status = "zsh_llm_suggestions.installer:status"
 
 [project.urls]
 Homepage = "https://github.com/cearley/zsh-llm-suggestions"
@@ -47,13 +57,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = []  # No Python packages to ship
-include = [
-    "*.py",           # Include Python scripts
-    "*.zsh",          # Include zsh scripts
-    "README.md",      # Include documentation
-    "demo/*",         # Include demo files
-]
+packages = ["src/zsh_llm_suggestions"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"src/zsh_llm_suggestions/data" = "share/zsh-llm-suggestions"
+
+[tool.hatch.version]
+path = "src/zsh_llm_suggestions/__init__.py"
 
 [dependency-groups]
 dev = [

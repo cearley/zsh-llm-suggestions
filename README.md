@@ -30,6 +30,9 @@
 This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions), which hasn't been actively maintained. This fork includes several important improvements:
 
 **Recent Enhancements:**
+- ✅ **`uv tool install` support** - Install globally with a single command, no git clone required
+- ✅ **Interactive installer** - Automated setup with `zsh-llm-install` command
+- ✅ **Dual installation methods** - Choose between `uv tool install` or traditional git clone
 - ✅ **GitHub Actions CI/CD** with comprehensive smoke tests
 - ✅ **Local testing support** with `act` for workflow validation
 - ✅ **[Comprehensive security audit](SECURITY_AUDIT.md)** identifying critical vulnerabilities
@@ -37,9 +40,11 @@ This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.co
 - ✅ **Developer documentation** (CLAUDE.md for AI-assisted development)
 
 **Why Choose This Fork:**
+- **Easy installation** with `uv tool install` - no git clone required
 - **Active maintenance** with recent commits and ongoing development
 - **Modern tooling** including CI/CD, local testing, and comprehensive documentation
 - **Security focus** with detailed vulnerability assessment and planned fixes
+- **Dual installation methods** supporting both `uv tool install` and traditional git clone
 - **Future roadmap** with clear short-term and long-term improvement plans
 
 **Planned Improvements:**
@@ -68,7 +73,92 @@ can query an LLM for you to explain that command. You can combine these, by
 first generating a command from a human description, and then asking the LLM
 to explain the command.
 
+## Quick Start
+
+### Option 1: Install via `uv` (Recommended)
+
+The fastest way to get started:
+
+```bash
+# Install globally with uv
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions@latest
+
+# Run the interactive installer
+zsh-llm-install
+
+# Restart your shell or source your config
+source ~/.zshrc
+```
+
+### Option 2: Clone Repository (Classic Method)
+
+Traditional installation method:
+
+```bash
+# Clone to your preferred location
+git clone https://github.com/cearley/zsh-llm-suggestions.git ~/.local/share/zsh-llm-suggestions
+
+# Add to ~/.zshrc
+echo 'source ~/.local/share/zsh-llm-suggestions/zsh-llm-suggestions.zsh' >> ~/.zshrc
+
+# Configure key bindings (add to ~/.zshrc)
+bindkey '^o' zsh_llm_suggestions_openai              # Ctrl + O for OpenAI suggestions
+bindkey '^[^o' zsh_llm_suggestions_openai_explain   # Ctrl + Alt + O for explanations
+bindkey '^p' zsh_llm_suggestions_github_copilot     # Ctrl + P for Copilot suggestions
+bindkey '^[^p' zsh_llm_suggestions_github_copilot_explain # Ctrl + Alt + P for explanations
+
+# Restart your shell
+```
+
+Both methods work identically once set up!
+
 ## Installation
+
+### Method 1: Using `uv` (Recommended)
+
+`uv` provides the easiest installation and update experience:
+
+```bash
+# Install the tool globally
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions@latest
+```
+
+This installs five commands:
+- `zsh-llm-openai` - OpenAI backend (called by Ctrl+O)
+- `zsh-llm-copilot` - GitHub Copilot backend (called by Ctrl+P)
+- `zsh-llm-install` - Interactive setup wizard
+- `zsh-llm-uninstall` - Remove zsh integration
+- `zsh-llm-status` - Check installation status
+
+**Run the interactive installer:**
+
+```bash
+zsh-llm-install
+```
+
+The installer will:
+- Copy the zsh script to `~/.local/share/zsh-llm-suggestions/`
+- Offer to add the source line to your `~/.zshrc`
+- Configure key bindings automatically
+
+**Updating:**
+
+```bash
+# Update to latest version
+uv tool upgrade zsh-llm-suggestions
+```
+
+**Uninstalling:**
+
+```bash
+# Remove zsh integration
+zsh-llm-uninstall
+
+# Remove the tool
+uv tool uninstall zsh-llm-suggestions
+```
+
+### Method 2: Clone Repository
 
 Clone the repository:
 
@@ -218,17 +308,41 @@ export OPENAI_API_KEY="your_openai_api_key_here"
 
 ```
 zsh-llm-suggestions/
-├── .venv/                    # uv-managed virtual environment (auto-created)
-├── pyproject.toml           # Project configuration and dependencies
-├── uv.lock                  # Dependency lockfile (auto-generated)
-├── zsh-llm-suggestions.zsh  # Main plugin file
-├── *-openai.py              # OpenAI backend
-├── *-github-copilot.py      # GitHub Copilot backend
-├── test-environment.sh      # Comprehensive manual testing
-└── .env                     # API keys (create from .env.example)
+├── .venv/                           # uv-managed virtual environment (auto-created)
+├── pyproject.toml                   # Project configuration and dependencies
+├── uv.lock                          # Dependency lockfile (auto-generated)
+├── zsh-llm-suggestions.zsh          # Main plugin file
+├── src/
+│   └── zsh_llm_suggestions/
+│       ├── __init__.py              # Package initialization
+│       ├── openai_backend.py        # OpenAI backend
+│       ├── copilot_backend.py       # GitHub Copilot backend
+│       ├── installer.py             # Interactive installer commands
+│       └── data/
+│           └── zsh-llm-suggestions.zsh  # Zsh script for installer
+├── tests/
+│   ├── test_openai_unit.py         # Unit tests
+│   └── test_openai_integration.py  # Integration tests
+├── test-environment.sh              # Comprehensive manual testing
+└── .env                             # API keys (create from .env.example)
 ```
 
 ### Contributing
+
+When contributing to this project:
+
+1. **Fork the repository** on GitHub
+2. **Create feature branch:** `git checkout -b feature/your-feature-name`
+3. **Setup development environment:** `uv sync --dev`
+4. **Make changes** to the appropriate files:
+   - Python backends: `src/zsh_llm_suggestions/`
+   - Zsh integration: `zsh-llm-suggestions.zsh`
+   - Tests: `tests/`
+5. **Run tests:** `uv run pytest` to ensure everything passes
+6. **Test manually:** `./test-environment.sh` for interactive testing
+7. **Run CI locally:** `act --container-architecture linux/amd64` (requires [act](https://github.com/nektos/act))
+8. **Commit and push:** Follow conventional commit format
+9. **Create pull request:** Include description of changes and testing performed
 
 ## Automated Tests (Fork Enhancement)
 
@@ -266,14 +380,6 @@ python3 -m pytest -q
 ### Helpful scripts
 - run-tests.sh — convenience wrapper to execute the tests and generate coverage
 - test-environment.sh — launches a manual testing zsh session
-
-1. **Fork the repository** on GitHub
-2. **Create feature branch:** `git checkout -b feature/your-feature-name`  
-3. **Setup development environment:** `uv sync --dev`
-4. **Make changes and test:** `./test-environment.sh`
-5. **Run CI locally:** `act --container-architecture linux/amd64` (requires [act](https://github.com/nektos/act))
-6. **Commit and push:** Follow conventional commit format
-7. **Create pull request:** Include description of changes and testing performed
 
 ### Why uv?
 

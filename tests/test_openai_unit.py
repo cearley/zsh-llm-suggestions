@@ -17,10 +17,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Helper function to get the script path dynamically
 def get_openai_script_path():
-    """Get the path to zsh-llm-suggestions-openai.py relative to this test file"""
+    """Get the path to openai_backend.py relative to this test file"""
     test_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(test_dir)
-    return os.path.join(project_root, 'zsh-llm-suggestions-openai.py')
+    return os.path.join(project_root, 'src', 'zsh_llm_suggestions', 'openai_backend.py')
 
 
 class TestOpenAIMarkdownParsing(unittest.TestCase):

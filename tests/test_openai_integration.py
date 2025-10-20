@@ -64,8 +64,8 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_generate_simple_command(self):
         """Test generating a simple command via API"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         # Use uv if available, otherwise python3
         if os.system("command -v uv > /dev/null 2>&1") == 0:
@@ -96,8 +96,8 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_explain_command(self):
         """Test explaining a command via API"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         if os.system("command -v uv > /dev/null 2>&1") == 0:
             cmd = ['uv', 'run', 'python', script_path, 'explain']
@@ -123,8 +123,8 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_command_with_markdown_response(self):
         """Test that markdown responses are properly cleaned"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         if os.system("command -v uv > /dev/null 2>&1") == 0:
             cmd = ['uv', 'run', 'python', script_path, 'generate']
@@ -156,8 +156,8 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_rate_limiting_handling(self):
         """Test that the script handles rate limiting gracefully"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         if os.system("command -v uv > /dev/null 2>&1") == 0:
             cmd = ['uv', 'run', 'python', script_path, 'generate']
@@ -194,9 +194,9 @@ class TestEnvironmentDetection(unittest.TestCase):
         """Test that script works when run with uv"""
         if os.system("command -v uv > /dev/null 2>&1") != 0:
             self.skipTest("uv not available")
-        
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         # Test without API key (should fail gracefully)
         env = os.environ.copy()
@@ -217,8 +217,8 @@ class TestEnvironmentDetection(unittest.TestCase):
     
     def test_system_python_environment(self):
         """Test that script works with system python"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 'zsh-llm-suggestions-openai.py')
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
         
         # Test without API key (should fail gracefully)
         env = os.environ.copy()
