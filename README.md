@@ -59,9 +59,9 @@ echo 'source ~/.local/share/zsh-llm-suggestions/zsh-llm-suggestions.zsh' >> ~/.z
 
 # Configure key bindings in ~/.zshrc
 bindkey '^o' zsh_llm_suggestions_openai
-bindkey '^[^o' zsh_llm_suggestions_openai_explain
+bindkey '^xo' zsh_llm_suggestions_openai_explain       # Ctrl+X then O
 bindkey '^p' zsh_llm_suggestions_github_copilot
-bindkey '^[^p' zsh_llm_suggestions_github_copilot_explain
+bindkey '^xp' zsh_llm_suggestions_github_copilot_explain  # Ctrl+X then P
 
 # Restart your shell
 source ~/.zshrc
@@ -114,6 +114,7 @@ compress all log files                    # Press Ctrl+P → suggests: tar -czf 
 **Key bindings:**
 - `Ctrl+O` - Get command suggestion from OpenAI
 - `Ctrl+P` - Get command suggestion from GitHub Copilot
+- Press the same key again if you want a different suggestion
 
 If you don't like the suggestion, press the hotkey again to get a new one.
 
@@ -123,13 +124,15 @@ Type or paste a command you don't understand, then press the explain hotkey:
 
 **Examples:**
 ```bash
-find . -name '*.py' -exec grep -l 'TODO' {} \;    # Press Ctrl+Alt+O → explains the command
-tar -czf backup.tar.gz --exclude='*.log' ./data   # Press Ctrl+Alt+P → explains the command
+find . -name '*.py' -exec grep -l 'TODO' {} \;    # Press Ctrl+X then O → explains the command
+tar -czf backup.tar.gz --exclude='*.log' ./data   # Press Ctrl+X then P → explains the command
 ```
 
 **Key bindings:**
-- `Ctrl+Alt+O` - Explain command using OpenAI
-- `Ctrl+Alt+P` - Explain command using GitHub Copilot
+- `Ctrl+X` then `O` - Explain command using OpenAI
+- `Ctrl+X` then `P` - Explain command using GitHub Copilot
+
+**Note:** These keybindings work universally across all terminals, including IDE terminals (PyCharm, VS Code, etc.).
 
 ## Commands (uv installation only)
 

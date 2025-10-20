@@ -1,0 +1,120 @@
+name: Auto Release
+
+# Trigger when __init__.py changes on master branch
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/zsh_llm_suggestions/__init__.py'
+
+permissions:
+  contents: write  # Required to create tags and releases
+
+jobs:
+  auto-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tag comparison
+
+      - name: Extract version from __init__.py
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '__version__ = "\K[^"]+' src/zsh_llm_suggestions/__init__.py)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Detected version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Tag v${{ steps.get_version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag v${{ steps.get_version.outputs.version }} does not exist yet"
+          fi
+
+      - name: Get previous tag
+        id: prev_tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "tag=<initial>" >> $GITHUB_OUTPUT
+            echo "📝 This is the first release"
+          else
+            echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+            echo "📝 Previous release: $PREV_TAG"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.get_version.outputs.tag }}" -m "Release ${{ steps.get_version.outputs.tag }}"
+          git push origin "${{ steps.get_version.outputs.tag }}"
+          echo "🏷️  Created and pushed tag ${{ steps.get_version.outputs.tag }}"
+
+      - name: Generate release notes
+        if: steps.check_tag.outputs.exists == 'false'
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## Installation
+
+          ### Install via uv (Recommended)
+          ```bash
+          uv tool install git+https://github.com/cearley/zsh-llm-suggestions@${{ steps.get_version.outputs.tag }}
+          zsh-llm-install
+          ```
+
+          ### Install via git clone
+          ```bash
+          git clone --branch ${{ steps.get_version.outputs.tag }} https://github.com/cearley/zsh-llm-suggestions.git ~/.local/share/zsh-llm-suggestions
+          echo 'source ~/.local/share/zsh-llm-suggestions/zsh-llm-suggestions.zsh' >> ~/.zshrc
+          ```
+
+          ## Key Bindings
+          - `Ctrl+O` - OpenAI command suggestions
+          - `Ctrl+X then O` - OpenAI command explanations
+          - `Ctrl+P` - GitHub Copilot suggestions
+          - `Ctrl+X then P` - GitHub Copilot explanations
+
+          See [README.md](https://github.com/cearley/zsh-llm-suggestions/blob/master/README.md) for full documentation.
+          EOF
+          echo "📝 Generated release notes"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the commit range for changelog
+          if [ "${{ steps.prev_tag.outputs.tag }}" = "<initial>" ]; then
+            NOTES_HEADER="## What's New\n\nInitial release of zsh-llm-suggestions!\n"
+          else
+            NOTES_HEADER="## What's Changed\n\n"
+          fi
+
+          # Create release with auto-generated notes + custom template
+          gh release create "${{ steps.get_version.outputs.tag }}" \
+            --title "${{ steps.get_version.outputs.tag }}" \
+            --notes-file release_notes.md \
+            --generate-notes \
+            --latest
+
+          echo "🎉 Created GitHub release: ${{ steps.get_version.outputs.tag }}"
+
+      - name: Release already exists
+        if: steps.check_tag.outputs.exists == 'true'
+        run: |
+          echo "ℹ️  Skipping release creation - tag ${{ steps.get_version.outputs.tag }} already exists"
+          echo "If you need to recreate the release, delete the tag first:"
+          echo "  git tag -d ${{ steps.get_version.outputs.tag }}"
+          echo "  git push origin :refs/tags/${{ steps.get_version.outputs.tag }}"

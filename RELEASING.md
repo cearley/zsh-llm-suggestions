@@ -2,99 +2,163 @@
 
 This document outlines the steps for creating a new release of zsh-llm-suggestions.
 
+## 🎯 Quick Release (Recommended)
+
+The easiest way to create a release is to use our **automated workflow**:
+
+### Automatic Release (Primary Method)
+
+1. **Update version** in `src/zsh_llm_suggestions/__init__.py`:
+   ```python
+   __version__ = "0.2.3"  # Change to your new version
+   ```
+
+2. **Commit and push** to master:
+   ```bash
+   git add src/zsh_llm_suggestions/__init__.py
+   git commit -m "Bump version to 0.2.3"
+   git push origin master
+   ```
+
+3. **Done!** 🎉
+   - GitHub Actions automatically creates the git tag
+   - GitHub Actions automatically creates the GitHub release
+   - Release notes are auto-generated from commits
+
+**That's it!** No manual tagging or release creation needed.
+
+### Manual Release (Backup Method)
+
+If you need more control or the automatic workflow fails:
+
+1. Go to **Actions** tab on GitHub
+2. Select **Manual Release** workflow
+3. Click **Run workflow**
+4. Enter the version number (e.g., `0.2.3`)
+5. Optionally check "Update __init__.py" if you haven't updated it yet
+6. Click **Run workflow**
+
+The workflow will create the tag and GitHub release for you.
+
+---
+
 ## Prerequisites
 
-- All changes committed to the `master` branch
-- All tests passing (`uv run pytest`)
-- Manual testing completed (`./test-environment.sh`)
-- README.md updated with any new features or changes
-- CLAUDE.md updated if development workflow changed
+Before any release:
 
-## Release Checklist
-
-### 1. Prepare the Release
-
-Before creating the release, ensure:
-
-- [ ] Version number updated in `src/zsh_llm_suggestions/__init__.py`
-- [ ] All changes committed and pushed to master
+- [ ] All changes committed to the `master` branch
+- [ ] All tests passing (`uv run pytest`)
+- [ ] Manual testing completed (`./test-environment.sh`)
+- [ ] README.md updated with any new features or changes
+- [ ] CLAUDE.md updated if development workflow changed
 - [ ] CI/CD passing on GitHub Actions
 - [ ] No critical bugs or security issues pending
 
-### 2. Create Git Tag
+## Version Source of Truth
 
-Create an annotated tag for the release:
+**Version is defined in one place only:**
+- `src/zsh_llm_suggestions/__init__.py`: `__version__ = "X.Y.Z"`
+
+The `pyproject.toml` automatically reads from this file via:
+```toml
+[tool.hatch.version]
+path = "src/zsh_llm_suggestions/__init__.py"
+```
+
+**You only need to update `__init__.py`** - the rest is automatic!
+
+## Automated Workflows
+
+### Auto-Release Workflow
+
+**File**: `.github/workflows/auto-release.yml`
+
+**Triggers**: When `src/zsh_llm_suggestions/__init__.py` changes on master
+
+**What it does**:
+1. Detects version change in `__init__.py`
+2. Extracts the new version number
+3. Creates annotated git tag (e.g., `v0.2.3`)
+4. Creates GitHub release with auto-generated notes
+5. Includes installation instructions in release
+
+**When to use**: For most releases - just bump the version and push!
+
+### Manual Release Workflow
+
+**File**: `.github/workflows/manual-release.yml`
+
+**Triggers**: Manual workflow dispatch
+
+**Inputs**:
+- `version`: Version to release (without v prefix)
+- `update_version_file`: Optionally update `__init__.py`
+
+**What it does**:
+1. Validates version format
+2. Optionally updates `__init__.py` and commits
+3. Creates annotated git tag
+4. Creates GitHub release with auto-generated notes
+
+**When to use**:
+- Hotfixes that need immediate release
+- When automatic workflow fails
+- When you need more control over the process
+
+## Traditional Manual Release (Legacy)
+
+If you prefer the old manual process or need to release without GitHub Actions:
+
+### 1. Update Version
+
+Update version in `src/zsh_llm_suggestions/__init__.py`:
+```python
+__version__ = "0.2.3"
+```
+
+### 2. Commit Changes
+
+```bash
+git add src/zsh_llm_suggestions/__init__.py
+git commit -m "Bump version to 0.2.3"
+git push origin master
+```
+
+### 3. Create Git Tag
 
 ```bash
 # Format: v<major>.<minor>.<patch>
-git tag -a v0.1.0 -m "Release v0.1.0: Add uv tool install support"
+git tag -a v0.2.3 -m "Release v0.2.3: Brief description"
+git push origin v0.2.3
 ```
 
 **Tag Naming Convention:**
 - Use semantic versioning: `v<major>.<minor>.<patch>`
-- Include a brief description of the main feature/change in the tag message
-
-### 3. Push Commit and Tag
-
-Push both the commit and the tag to GitHub:
-
-```bash
-# Push the commit(s)
-git push origin master
-
-# Push the tag
-git push origin v0.1.0
-```
+- Include a brief description in the tag message
 
 ### 4. Create GitHub Release
 
-You can create the release using either the GitHub web interface or the `gh` CLI.
-
-#### Option A: Using GitHub Web Interface
-
-1. Navigate to: `https://github.com/cearley/zsh-llm-suggestions/releases/new`
-2. Select the tag you just pushed (e.g., `v0.1.0`)
-3. Set the release title (e.g., `v0.1.0: uv tool install support`)
-4. Add release notes (see template below)
-5. Click "Publish release"
-
-#### Option B: Using GitHub CLI
+Using GitHub CLI:
 
 ```bash
-gh release create v0.1.0 \
-  --title "v0.1.0: uv tool install support" \
-  --notes "First release with uv tool install support.
-
-**Installation:**
-\`\`\`bash
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.1.0
-\`\`\`
-
-**Features:**
-- Install via \`uv tool install\` or traditional git clone
-- Interactive installer with \`zsh-llm-install\` command
-- Dual installation method support
-- All existing functionality preserved
-
-**Changes:**
-- Restructured to proper Python package in src/
-- Added entry points for CLI commands
-- Updated CI to test both installation methods
-- Comprehensive README updates
-
-**Breaking Changes:**
-None - backward compatible with git clone method
-
-See README for full installation and usage instructions."
+gh release create v0.2.3 \
+  --title "v0.2.3: Brief description" \
+  --generate-notes \
+  --latest
 ```
 
-### 5. Verify the Release
+Or use the GitHub web interface at:
+`https://github.com/cearley/zsh-llm-suggestions/releases/new`
 
-After publishing, verify:
+---
+
+## Verifying a Release
+
+After any release (automatic or manual), verify it works:
 
 ```bash
 # Test installation from the new release
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.1.0
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.2.3
 
 # Verify commands are available
 command -v zsh-llm-openai
@@ -104,100 +168,60 @@ command -v zsh-llm-install
 zsh-llm-status
 ```
 
-### 6. Installation Without Version Specifier
+## Installation Behavior
 
-Users installing without a version specifier will get the latest code from the master branch:
+Users installing without a version specifier get the latest code from master:
 
 ```bash
 uv tool install git+https://github.com/cearley/zsh-llm-suggestions
 ```
 
-To install a specific version, users can specify the tag:
+To install a specific version, specify the tag:
 
 ```bash
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.2.1
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.2.3
 ```
 
-## Release Notes Template
-
-Use this template for release notes:
-
-```markdown
-# v<version>: <Brief Description>
-
-<Longer description of the release and its significance>
-
-**Installation:**
-\`\`\`bash
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v<version>
-\`\`\`
-
-**Features:**
-- Feature 1
-- Feature 2
-- Feature 3
-
-**Changes:**
-- Change 1
-- Change 2
-- Change 3
-
-**Bug Fixes:**
-- Fix 1
-- Fix 2
-
-**Breaking Changes:**
-<List any breaking changes, or state "None">
-
-**Deprecations:**
-<List any deprecations, or state "None">
-
-**Upgrade Notes:**
-<Any special instructions for upgrading from previous versions>
-
-See [README.md](README.md) for full installation and usage instructions.
-```
+---
 
 ## Semantic Versioning Guide
 
 This project follows [Semantic Versioning](https://semver.org/):
 
 - **Major version (X.0.0)**: Breaking changes that require user action
+  - Example: `v0.9.0` → `v1.0.0` - Changed command names or removed features
 - **Minor version (0.X.0)**: New features, backward compatible
+  - Example: `v0.1.0` → `v0.2.0` - Added new commands or features
 - **Patch version (0.0.X)**: Bug fixes, backward compatible
+  - Example: `v0.2.0` → `v0.2.1` - Fixed bug in installer
 
-**Examples:**
-- `v0.1.0` → `v0.2.0`: Added new commands (backward compatible)
-- `v0.1.0` → `v1.0.0`: Changed command names (breaking change)
-- `v0.1.0` → `v0.1.1`: Fixed bug in installer (patch)
+**Version Bumping Guide:**
+- Bug fixes only → Bump patch (0.2.2 → 0.2.3)
+- New features + bug fixes → Bump minor (0.2.3 → 0.3.0)
+- Breaking changes → Bump major (0.9.0 → 1.0.0)
 
 ## Hotfix Process
 
 For urgent bug fixes that need immediate release:
 
-1. Create a hotfix branch from the tag:
-   ```bash
-   git checkout -b hotfix/v0.1.1 v0.1.0
-   ```
+**Quick Hotfix (Recommended):**
+1. Fix the bug on master branch
+2. Bump version in `__init__.py` to patch version (e.g., 0.2.2 → 0.2.3)
+3. Commit and push
+4. Auto-release workflow creates the release automatically
 
-2. Make the fix and commit:
-   ```bash
-   # Make your changes
-   git commit -m "Fix critical bug in installer"
-   ```
+**Or use Manual Release workflow:**
+1. Fix the bug on master branch
+2. Go to Actions → Manual Release
+3. Enter the patch version number
+4. Run workflow
 
-3. Merge back to master:
-   ```bash
-   git checkout master
-   git merge hotfix/v0.1.1
-   ```
-
-4. Follow steps 2-6 above to create the patch release
-
-5. Delete the hotfix branch:
-   ```bash
-   git branch -d hotfix/v0.1.1
-   ```
+**Traditional Hotfix Branch (if needed):**
+1. Create hotfix branch from tag: `git checkout -b hotfix/v0.2.3 v0.2.2`
+2. Make the fix and commit
+3. Merge to master: `git checkout master && git merge hotfix/v0.2.3`
+4. Use automatic or manual release workflow
+5. Delete hotfix branch: `git branch -d hotfix/v0.2.3`
 
 ## Post-Release Tasks
 
@@ -210,37 +234,74 @@ After publishing a release:
 
 ## Troubleshooting
 
+### Auto-release workflow didn't trigger
+
+**Symptoms**: Pushed version bump but no release was created
+
+**Solutions**:
+1. Check GitHub Actions tab for workflow status
+2. Verify the workflow file path is correct: `.github/workflows/auto-release.yml`
+3. Ensure you pushed to `master` branch
+4. Check that `__init__.py` actually changed (not just `pyproject.toml`)
+5. Use Manual Release workflow as backup
+
 ### Tag already exists
 
-If you need to recreate a tag:
+**Symptoms**: Workflow fails with "tag already exists" error
 
+**Solutions**:
+
+Option 1 - Use existing tag (recommended):
+- The release already exists, no action needed
+- Check: https://github.com/cearley/zsh-llm-suggestions/releases
+
+Option 2 - Delete and recreate tag (⚠️ use with caution):
 ```bash
 # Delete local tag
-git tag -d v0.1.0
+git tag -d v0.2.3
 
 # Delete remote tag
-git push origin :refs/tags/v0.1.0
+git push origin :refs/tags/v0.2.3
 
-# Create new tag
-git tag -a v0.1.0 -m "Release v0.1.0: Updated description"
+# Delete GitHub release (if exists)
+gh release delete v0.2.3 --yes
 
-# Push new tag
-git push origin v0.1.0
+# Now push version change again to trigger auto-release
 ```
 
-**⚠️ Warning:** Only do this if the release hasn't been published yet or if it's absolutely necessary. Changing published releases can break existing installations.
+**⚠️ Warning:** Only delete published tags/releases if absolutely necessary. It can break existing installations.
 
-### Release published with wrong notes
+### Version mismatch
+
+**Symptoms**: Manual workflow warns about version mismatch
+
+**Solution**: Enable "Update __init__.py" checkbox in manual workflow, or manually update `__init__.py` before running the workflow.
+
+### Workflow permissions error
+
+**Symptoms**: "Resource not accessible by integration" error
+
+**Solution**: Verify workflow has `contents: write` permission (already configured in workflow files).
+
+### Release notes wrong or incomplete
 
 You can edit release notes after publication:
 
 ```bash
 # Using GitHub CLI
-gh release edit v0.1.0 --notes "Updated release notes..."
+gh release edit v0.2.3 --notes "Updated release notes..."
 
-# Or edit via web interface
-# Navigate to: https://github.com/cearley/zsh-llm-suggestions/releases
+# Or edit via web interface at:
+# https://github.com/cearley/zsh-llm-suggestions/releases
 ```
+
+### Need to re-run release workflow
+
+If the workflow partially failed:
+
+1. Delete the tag (see "Tag already exists" above)
+2. Delete the partial release: `gh release delete v0.2.3 --yes`
+3. Re-push the commit or run manual workflow again
 
 ## Related Documentation
 

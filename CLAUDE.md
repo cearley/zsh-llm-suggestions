@@ -10,10 +10,12 @@ This is `zsh-llm-suggestions`, a zsh plugin that provides LLM-powered command su
 
 The project consists of several key components:
 
-1. **Main zsh script** (`zsh-llm-suggestions.zsh`): Core shell integration with functions for handling user input, displaying spinner animations, and managing the query/response flow
-2. **LLM backends**: Two Python scripts that interface with different LLM providers:
-   - `zsh-llm-suggestions-openai.py`: Uses OpenAI's GPT-4-1106-preview model via the OpenAI Python SDK
-   - `zsh-llm-suggestions-github-copilot.py`: Uses GitHub Copilot via the `gh copilot` CLI command
+1. **Main zsh script**: Core shell integration with functions for handling user input, displaying spinner animations, and managing the query/response flow
+   - Source file: `src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh`
+   - Symlink at root: `zsh-llm-suggestions.zsh` → `src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh`
+2. **LLM backends**: Two Python modules that interface with different LLM providers:
+   - `src/zsh_llm_suggestions/openai_backend.py`: Uses OpenAI's GPT-4-1106-preview model via the OpenAI Python SDK
+   - `src/zsh_llm_suggestions/copilot_backend.py`: Uses GitHub Copilot via the `gh copilot` CLI command
 3. **Demo files** (`demo/`): Example interactions showing the plugin in action
 
 ## Core Workflow
@@ -136,12 +138,19 @@ This creates an isolated zsh session with:
 ```
 zsh-llm-suggestions/
 ├── .venv/                           # uv-managed virtual environment (auto-created)
-├── pyproject.toml                   # Project configuration and dependencies  
+├── pyproject.toml                   # Project configuration and dependencies
 ├── uv.lock                          # Dependency lockfile (auto-generated)
-├── zsh-llm-suggestions.zsh          # Main plugin file to be sourced in `.zshrc`
-├── zsh-llm-suggestions-openai.py    # OpenAI backend
-├── zsh-llm-suggestions-github-copilot.py  # GitHub Copilot backend
+├── zsh-llm-suggestions.zsh          # Symlink to src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh
+├── src/
+│   └── zsh_llm_suggestions/
+│       ├── __init__.py              # Package metadata
+│       ├── openai_backend.py        # OpenAI backend
+│       ├── copilot_backend.py       # GitHub Copilot backend
+│       ├── installer.py             # Interactive installer
+│       └── data/
+│           └── zsh-llm-suggestions.zsh  # Main zsh script (source file)
 ├── test-environment.sh              # Comprehensive manual testing environment
+├── tests/                           # Unit and integration tests
 ├── .env                             # API keys and environment variables (create from .env.example)
 ├── .env.example                     # Environment variable template
 ├── demo/                            # Example usage demonstrations

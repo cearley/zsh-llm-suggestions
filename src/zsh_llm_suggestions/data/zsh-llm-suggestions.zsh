@@ -97,10 +97,16 @@ zsh_llm_completion() {
     CURSOR=${#ZSH_LLM_SUGGESTIONS_LAST_RESULT}
   fi
   if [[ "$mode" == "explain" ]]; then
-    echo ""
-    # Security: removed unnecessary eval
-    cat "$result_file"
-    echo ""
+    # Read the explanation
+    local result_content=$(cat "$result_file")
+
+    # Use print with newline to display below the current line
+    # This works in ZLE context by writing directly
+    print -n '\n' >&2
+    print -r "$result_content" >&2
+    print -n '\n' >&2
+
+    # Redraw the prompt
     zle reset-prompt
   fi
 }

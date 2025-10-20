@@ -1,0 +1,159 @@
+name: Manual Release
+
+# Allow manual triggering with version input
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (without v prefix, e.g., 0.2.3)'
+        required: true
+        type: string
+      update_version_file:
+        description: 'Update __init__.py with this version?'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # Required to create tags, releases, and push commits
+
+jobs:
+  manual-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Invalid version format: ${{ inputs.version }}"
+            echo "Expected format: X.Y.Z (e.g., 0.2.3)"
+            exit 1
+          fi
+          echo "✅ Version format valid: ${{ inputs.version }}"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Tag v${{ inputs.version }} already exists!"
+            exit 1
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag v${{ inputs.version }} is available"
+          fi
+
+      - name: Update version in __init__.py
+        if: inputs.update_version_file == true
+        run: |
+          sed -i 's/__version__ = ".*"/__version__ = "${{ inputs.version }}"/' src/zsh_llm_suggestions/__init__.py
+
+          # Check if file actually changed
+          if git diff --quiet src/zsh_llm_suggestions/__init__.py; then
+            echo "ℹ️  No changes to __init__.py (version was already ${{ inputs.version }})"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add src/zsh_llm_suggestions/__init__.py
+            git commit -m "Bump version to ${{ inputs.version }}"
+            git push
+            echo "✅ Updated __init__.py and committed version bump"
+          fi
+
+      - name: Get current version from __init__.py
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep -oP '__version__ = "\K[^"]+' src/zsh_llm_suggestions/__init__.py)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Current version in __init__.py: $CURRENT_VERSION"
+
+      - name: Warn if versions don't match
+        if: steps.current_version.outputs.version != inputs.version
+        run: |
+          echo "⚠️  WARNING: Version mismatch!"
+          echo "  Input version: ${{ inputs.version }}"
+          echo "  __init__.py version: ${{ steps.current_version.outputs.version }}"
+          echo ""
+          if [ "${{ inputs.update_version_file }}" = "false" ]; then
+            echo "💡 Tip: Enable 'Update __init__.py' to automatically sync versions"
+          fi
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "tag=<initial>" >> $GITHUB_OUTPUT
+            echo "📝 This is the first release"
+          else
+            echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+            echo "📝 Previous release: $PREV_TAG"
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+          echo "🏷️  Created and pushed tag v${{ inputs.version }}"
+
+      - name: Generate release notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## Installation
+
+          ### Install via uv (Recommended)
+          ```bash
+          uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v${{ inputs.version }}
+          zsh-llm-install
+          ```
+
+          ### Install via git clone
+          ```bash
+          git clone --branch v${{ inputs.version }} https://github.com/cearley/zsh-llm-suggestions.git ~/.local/share/zsh-llm-suggestions
+          echo 'source ~/.local/share/zsh-llm-suggestions/zsh-llm-suggestions.zsh' >> ~/.zshrc
+          ```
+
+          ## Key Bindings
+          - `Ctrl+O` - OpenAI command suggestions
+          - `Ctrl+X then O` - OpenAI command explanations
+          - `Ctrl+P` - GitHub Copilot suggestions
+          - `Ctrl+X then P` - GitHub Copilot explanations
+
+          See [README.md](https://github.com/cearley/zsh-llm-suggestions/blob/master/README.md) for full documentation.
+
+          ---
+          *📝 This release was created manually via GitHub Actions workflow.*
+          EOF
+          echo "📝 Generated release notes"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" \
+            --title "v${{ inputs.version }}" \
+            --notes-file release_notes.md \
+            --generate-notes \
+            --latest
+
+          echo "🎉 Created GitHub release: v${{ inputs.version }}"
+
+      - name: Summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Successfully created release v${{ inputs.version }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: \`v${{ inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Previous tag: \`${{ steps.prev_tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Version in __init__.py: \`${{ steps.current_version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Release](https://github.com/cearley/zsh-llm-suggestions/releases/tag/v${{ inputs.version }})" >> $GITHUB_STEP_SUMMARY

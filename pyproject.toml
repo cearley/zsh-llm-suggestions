@@ -1,6 +1,6 @@
 [project]
 name = "zsh-llm-suggestions"
-version = "0.1.0"
+version = "0.2.2"
 description = "LLM-based command suggestions for zsh"
 authors = [
     {name = "Craig Earley", email = "cearley@users.noreply.github.com"}

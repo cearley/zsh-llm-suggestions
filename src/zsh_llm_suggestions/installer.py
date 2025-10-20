@@ -76,9 +76,9 @@ def install():
             config_content = config_file.read_text()  # Re-read to get updated content
             key_bindings = [
                 "bindkey '^o' zsh_llm_suggestions_openai",
-                "bindkey '^[^o' zsh_llm_suggestions_openai_explain",
+                "bindkey '^xo' zsh_llm_suggestions_openai_explain",
                 "bindkey '^p' zsh_llm_suggestions_github_copilot",
-                "bindkey '^[^p' zsh_llm_suggestions_github_copilot_explain"
+                "bindkey '^xp' zsh_llm_suggestions_github_copilot_explain"
             ]
 
             # Check if key bindings already exist
@@ -95,9 +95,9 @@ def install():
                             f.write(f'{binding}\n')
                     print("✅ Configured key bindings:")
                     print("   • Ctrl+O - OpenAI suggestions")
-                    print("   • Ctrl+Alt+O - OpenAI explanations")
+                    print("   • Ctrl+X then O - OpenAI explanations")
                     print("   • Ctrl+P - Copilot suggestions")
-                    print("   • Ctrl+Alt+P - Copilot explanations")
+                    print("   • Ctrl+X then P - Copilot explanations")
                 else:
                     print()
                     print("⚠️  Please manually add key bindings to your shell config:")
@@ -176,9 +176,9 @@ def uninstall():
         config_content = config_file.read_text()  # Re-read to get updated content
         key_bindings = [
             "bindkey '^o' zsh_llm_suggestions_openai",
-            "bindkey '^[^o' zsh_llm_suggestions_openai_explain",
+            "bindkey '^xo' zsh_llm_suggestions_openai_explain",
             "bindkey '^p' zsh_llm_suggestions_github_copilot",
-            "bindkey '^[^p' zsh_llm_suggestions_github_copilot_explain"
+            "bindkey '^xp' zsh_llm_suggestions_github_copilot_explain"
         ]
 
         # Check if any key bindings exist

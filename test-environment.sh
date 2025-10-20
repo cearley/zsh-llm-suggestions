@@ -153,10 +153,10 @@ cat > "$TEMP_ZSHRC" << EOF
 source "$SCRIPT_DIR/zsh-llm-suggestions.zsh"
 
 # Set up key bindings (as documented in README.md)
-bindkey '^o' zsh_llm_suggestions_openai              # Ctrl + O for OpenAI suggestions
-bindkey '^[^o' zsh_llm_suggestions_openai_explain    # Ctrl + Alt + O for OpenAI explanations
-bindkey '^p' zsh_llm_suggestions_github_copilot      # Ctrl + P for GitHub Copilot suggestions  
-bindkey '^[^p' zsh_llm_suggestions_github_copilot_explain # Ctrl + Alt + P for GitHub Copilot explanations
+bindkey '^o' zsh_llm_suggestions_openai              # Ctrl+O for OpenAI suggestions
+bindkey '^xo' zsh_llm_suggestions_openai_explain     # Ctrl+X then O for OpenAI explanations
+bindkey '^p' zsh_llm_suggestions_github_copilot      # Ctrl+P for GitHub Copilot suggestions
+bindkey '^xp' zsh_llm_suggestions_github_copilot_explain # Ctrl+X then P for GitHub Copilot explanations
 
 # Set up environment variables
 export OPENAI_API_KEY="$OPENAI_API_KEY"
@@ -183,10 +183,10 @@ cat << 'INSTRUCTIONS'
 ===============================================
 
 Available Key Bindings:
-  Ctrl + O       : OpenAI command suggestions
-  Ctrl + Alt + O : OpenAI command explanations
-  Ctrl + P       : GitHub Copilot suggestions (if available)
-  Ctrl + Alt + P : GitHub Copilot explanations (if available)
+  Ctrl+O        : OpenAI command suggestions
+  Ctrl+X then O : OpenAI command explanations
+  Ctrl+P        : GitHub Copilot suggestions (if available)
+  Ctrl+X then P : GitHub Copilot explanations (if available)
 
 Test Aliases:
   test-openai-direct  : Test OpenAI API directly (bypasses zsh integration)
@@ -194,8 +194,8 @@ Test Aliases:
 
 Usage Instructions:
 1. Type a description like: "find all python files"
-2. Press Ctrl + O to get OpenAI suggestion
-3. If you get a command, press Ctrl + Alt + O to get explanation
+2. Press Ctrl+O to get OpenAI suggestion
+3. If you get a command, press Ctrl+X then O to get explanation
 4. Type 'exit' to leave test environment
 
 Example Commands to Try:
