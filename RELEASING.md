@@ -21,11 +21,34 @@ The easiest way to create a release is to use our **automated workflow**:
    ```
 
 3. **Done!** 🎉
-   - GitHub Actions automatically creates the git tag
-   - GitHub Actions automatically creates the GitHub release
+   - CI runs automatically
+   - If CI passes: GitHub Actions creates tag and release
+   - If CI fails: Fix the issue, push again (no need to bump version again!)
    - Release notes are auto-generated from commits
 
 **That's it!** No manual tagging or release creation needed.
+
+### What if CI fails?
+
+No problem! The workflow is smart:
+
+```bash
+# Scenario: CI fails after version bump
+git add src/zsh_llm_suggestions/__init__.py some_code.py
+git commit -m "Bump version to 0.2.3 + new feature"
+git push
+→ CI runs... FAILS ❌
+→ No release created (good!)
+
+# Fix the code, push again (version already bumped)
+git add some_code.py
+git commit -m "Fix bug in new feature"
+git push
+→ CI runs... PASSES ✅
+→ Release v0.2.3 created! 🎉
+```
+
+The workflow compares the version in `__init__.py` with the latest tag, not just the files changed in the current commit.
 
 ### Manual Release (Backup Method)
 
@@ -73,16 +96,24 @@ path = "src/zsh_llm_suggestions/__init__.py"
 
 **File**: `.github/workflows/auto-release.yml`
 
-**Triggers**: When `src/zsh_llm_suggestions/__init__.py` changes on master
+**Triggers**: After CI workflow completes successfully on master
+
+**Safety**: Only releases when:
+- ✅ CI workflow passes all tests
+- ✅ Version in `__init__.py` differs from latest tag
 
 **What it does**:
-1. Detects version change in `__init__.py`
-2. Extracts the new version number
-3. Creates annotated git tag (e.g., `v0.2.3`)
+1. Waits for CI to complete successfully
+2. Compares current version with latest tag
+3. If version changed: creates git tag (e.g., `v0.2.3`)
 4. Creates GitHub release with auto-generated notes
 5. Includes installation instructions in release
 
+**Smart behavior**: If CI fails on first push, just fix the code and push again - the release will still trigger!
+
 **When to use**: For most releases - just bump the version and push!
+
+**Important**: If CI fails, the release workflow will not run. Fix CI issues before releasing.
 
 ### Manual Release Workflow
 
@@ -238,12 +269,22 @@ After publishing a release:
 
 **Symptoms**: Pushed version bump but no release was created
 
+**Common causes**:
+1. **CI workflow failed** - Auto-release only runs after CI succeeds
+   - Check the CI workflow status first
+   - Fix any failing tests, then push the fix
+   - Release will trigger once CI passes
+2. **Version already released** - The version in `__init__.py` matches the latest tag
+   - Check: https://github.com/cearley/zsh-llm-suggestions/releases
+   - If you want a new release, bump the version number
+3. **Not on master branch** - Workflow only runs on master
+   - Ensure you pushed to `master` branch
+
 **Solutions**:
-1. Check GitHub Actions tab for workflow status
-2. Verify the workflow file path is correct: `.github/workflows/auto-release.yml`
-3. Ensure you pushed to `master` branch
-4. Check that `__init__.py` actually changed (not just `pyproject.toml`)
-5. Use Manual Release workflow as backup
+1. Check **Actions** tab for CI workflow status
+2. If CI passed, check Auto Release workflow status
+3. Verify the version in `__init__.py` differs from the latest tag
+4. Use **Manual Release** workflow as backup if needed
 
 ### Tag already exists
 
