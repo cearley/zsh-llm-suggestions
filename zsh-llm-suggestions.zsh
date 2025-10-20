@@ -33,7 +33,8 @@ zsh_llm_suggestions_run_query() {
   # Use uv run python if uv is available, otherwise fall back to python3
   local python_cmd
   if command -v uv &> /dev/null; then
-    python_cmd="uv run python"
+    # Use --project flag to ensure uv finds the correct pyproject.toml
+    python_cmd="uv run --project $SCRIPT_DIR python"
   else
     python_cmd="python3"
   fi
