@@ -39,7 +39,7 @@ This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.co
 
 ```bash
 # Install globally
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@latest
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions
 
 # Run the interactive installer (automatically configures source line and key bindings)
 zsh-llm-install

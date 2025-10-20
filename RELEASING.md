@@ -104,12 +104,18 @@ command -v zsh-llm-install
 zsh-llm-status
 ```
 
-### 6. Update @latest Installation
+### 6. Installation Without Version Specifier
 
-Users installing with `@latest` will automatically get the new version:
+Users installing without a version specifier will get the latest code from the master branch:
 
 ```bash
-uv tool install git+https://github.com/cearley/zsh-llm-suggestions@latest
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions
+```
+
+To install a specific version, users can specify the tag:
+
+```bash
+uv tool install git+https://github.com/cearley/zsh-llm-suggestions@v0.2.1
 ```
 
 ## Release Notes Template
