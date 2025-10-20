@@ -79,16 +79,21 @@ Before any release:
 
 ## Version Source of Truth
 
-**Version is defined in one place only:**
+**Version is defined in ONE place only:**
 - `src/zsh_llm_suggestions/__init__.py`: `__version__ = "X.Y.Z"`
 
-The `pyproject.toml` automatically reads from this file via:
+The `pyproject.toml` reads dynamically from `__init__.py`:
 ```toml
+[project]
+dynamic = ["version"]  # Don't hardcode version here!
+
 [tool.hatch.version]
 path = "src/zsh_llm_suggestions/__init__.py"
 ```
 
-**You only need to update `__init__.py`** - the rest is automatic!
+**You only need to update `__init__.py`** - everything else (pyproject.toml, git tags, releases) is automatic!
+
+**Do NOT edit `pyproject.toml`** to change the version - it won't work!
 
 ## Automated Workflows
 
