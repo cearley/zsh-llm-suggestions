@@ -33,10 +33,10 @@ zsh_llm_suggestions_run_query() {
   # Try uv tool install method first (commands in PATH)
   if [[ "$llm" == *"openai"* ]] && command -v zsh-llm-openai &> /dev/null; then
     # Use installed command (uv tool install method)
-    echo -n "$query" | zsh-llm-openai "$mode" > $result_file
+    echo -n "$query" | zsh-llm-openai "$mode" > "$result_file"
   elif [[ "$llm" == *"copilot"* ]] && command -v zsh-llm-copilot &> /dev/null; then
     # Use installed command (uv tool install method)
-    echo -n "$query" | zsh-llm-copilot "$mode" > $result_file
+    echo -n "$query" | zsh-llm-copilot "$mode" > "$result_file"
   else
     # Fall back to git clone method - use src/ package files
     local backend_script=""
@@ -52,7 +52,8 @@ zsh_llm_suggestions_run_query() {
     else
       python_cmd="python3"
     fi
-    echo -n "$query" | eval "$python_cmd $backend_script $mode" > $result_file
+    # Security: removed eval, use proper quoting instead
+    echo -n "$query" | $python_cmd "$backend_script" "$mode" > "$result_file"
   fi
 }
 
@@ -76,7 +77,10 @@ zsh_llm_completion() {
   fi
 
   # Temporary file to store the result of the background process
-  local result_file="/tmp/zsh-llm-suggestions-result"
+  # Use mktemp for security: unpredictable path prevents symlink attacks and info disclosure
+  local result_file=$(mktemp /tmp/zsh-llm-suggestions.XXXXXX)
+  chmod 600 "$result_file"  # Restrictive permissions - only owner can read/write
+  trap "rm -f '$result_file'" EXIT  # Ensure cleanup on function exit
   # Run the actual query in the background (since it's long-running, and so that we can show a spinner)
   read < <( zsh_llm_suggestions_run_query $llm $query $result_file $mode & echo $! )
   # Get the PID of the background process
@@ -88,13 +92,14 @@ zsh_llm_completion() {
     # Place the query in the history first
     print -s $query
     # Replace the current buffer with the result
-    ZSH_LLM_SUGGESTIONS_LAST_RESULT=$(cat $result_file)
+    ZSH_LLM_SUGGESTIONS_LAST_RESULT=$(cat "$result_file")
     BUFFER="${ZSH_LLM_SUGGESTIONS_LAST_RESULT}"
     CURSOR=${#ZSH_LLM_SUGGESTIONS_LAST_RESULT}
   fi
   if [[ "$mode" == "explain" ]]; then
     echo ""
-    eval "cat $result_file"
+    # Security: removed unnecessary eval
+    cat "$result_file"
     echo ""
     zle reset-prompt
   fi

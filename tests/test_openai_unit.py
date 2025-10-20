@@ -162,9 +162,77 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         mock_print.assert_called_with("ERROR: something went wrong in zsh-llm-suggestions, please report a bug. Got unknown mode: invalid_mode")
 
 
+class TestInputValidation(unittest.TestCase):
+    """Test the input validation function"""
+
+    def test_valid_input(self):
+        """Test that valid input passes validation"""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("openai_script",
+            get_openai_script_path())
+        openai_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(openai_script)
+
+        test_input = "list all files in the current directory"
+        result = openai_script.validate_input(test_input)
+        self.assertEqual(result, test_input)
+
+    def test_input_with_null_bytes(self):
+        """Test that input with null bytes is rejected"""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("openai_script",
+            get_openai_script_path())
+        openai_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(openai_script)
+
+        test_input = "list files\0with null"
+        with self.assertRaises(ValueError) as context:
+            openai_script.validate_input(test_input)
+        self.assertIn("null bytes", str(context.exception))
+
+    def test_input_too_long(self):
+        """Test that overly long input is rejected"""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("openai_script",
+            get_openai_script_path())
+        openai_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(openai_script)
+
+        test_input = "a" * 2001  # Exceeds MAX_INPUT_LENGTH of 2000
+        with self.assertRaises(ValueError) as context:
+            openai_script.validate_input(test_input)
+        self.assertIn("too long", str(context.exception))
+
+    def test_input_with_control_characters(self):
+        """Test that control characters are stripped"""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("openai_script",
+            get_openai_script_path())
+        openai_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(openai_script)
+
+        test_input = "list\x01files\x02here"
+        result = openai_script.validate_input(test_input)
+        # Control characters should be stripped
+        self.assertEqual(result, "listfileshere")
+
+    def test_input_preserves_whitespace(self):
+        """Test that normal whitespace is preserved"""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("openai_script",
+            get_openai_script_path())
+        openai_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(openai_script)
+
+        test_input = "find files\nwith\ttabs\rand newlines"
+        result = openai_script.validate_input(test_input)
+        # Newlines, tabs, and carriage returns should be preserved
+        self.assertEqual(result, test_input)
+
+
 class TestHighlightFunction(unittest.TestCase):
     """Test the highlight_explanation function"""
-    
+
     def test_highlight_with_pygments(self):
         """Test highlight function when pygments is available"""
         import importlib.util

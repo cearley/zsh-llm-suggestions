@@ -5,6 +5,37 @@ import sys
 
 MISSING_PREREQUISITES = "zsh-llm-suggestions missing prerequisites:"
 
+# Security: Input validation constants
+MAX_INPUT_LENGTH = 2000  # Maximum characters to prevent abuse
+
+
+def validate_input(text):
+    """
+    Validate and sanitize user input for security.
+
+    Args:
+        text: User input string to validate
+
+    Returns:
+        Sanitized text string
+
+    Raises:
+        ValueError: If input fails validation
+    """
+    # Check for null bytes
+    if '\0' in text:
+        raise ValueError("Input contains null bytes")
+
+    # Check maximum length to prevent abuse
+    if len(text) > MAX_INPUT_LENGTH:
+        raise ValueError(f"Input too long (max {MAX_INPUT_LENGTH} characters, got {len(text)})")
+
+    # Strip dangerous control characters (except newlines, tabs, carriage returns)
+    # Keep printable characters and common whitespace
+    sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\r\t')
+
+    return sanitized.strip()
+
 
 def highlight_explanation(explanation):
     # Respect env override to disable syntax highlighting (useful for testing or minimal environments)
@@ -49,7 +80,14 @@ def main():
         api_key=api_key
     )
 
+    # Read and validate user input
     buffer = sys.stdin.read()
+    try:
+        buffer = validate_input(buffer)
+    except ValueError as e:
+        print(f'echo "ERROR: Invalid input: {e}"')
+        sys.exit(1)
+
     system_message = """You are a zsh shell expert, please write a ZSH command that solves my problem.
 You should only output the completed command, no need to include any other explanation."""
     if mode == 'explain':
@@ -61,13 +99,19 @@ You should only output the completed command, no need to include any other expla
         },
         {"role": "user", "content": buffer}
     ]
-    response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages=message,
-        temperature=0.2,
-        max_tokens=1000,
-        frequency_penalty=0.0
-    )
+    # Security: Add timeout to prevent indefinite hangs
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-1106-preview",
+            messages=message,
+            temperature=0.2,
+            max_tokens=1000,
+            frequency_penalty=0.0,
+            timeout=30.0  # 30 second timeout
+        )
+    except Exception as e:
+        print(f'echo "ERROR: API request failed: {e}"')
+        sys.exit(1)
     result = response.choices[0].message.content.strip()
     if mode == 'generate':
         # Strip Markdown code fences cleanly (including the newline that follows/precedes)

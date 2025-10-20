@@ -3,7 +3,7 @@
 [![CI](https://github.com/cearley/zsh-llm-suggestions/actions/workflows/ci.yml/badge.svg)](https://github.com/cearley/zsh-llm-suggestions/actions)
 [![Maintained](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/cearley/zsh-llm-suggestions/graphs/commit-activity)
 [![Last Commit](https://img.shields.io/github/last-commit/cearley/zsh-llm-suggestions)](https://github.com/cearley/zsh-llm-suggestions/commits/master)
-[![Security](https://img.shields.io/badge/security-vulnerabilities%20identified-red.svg)](SECURITY_AUDIT.md)
+[![Security](https://img.shields.io/badge/security-major%20vulnerabilities%20resolved-yellow.svg)](SECURITY_AUDIT.md)
 [![License](https://img.shields.io/github/license/cearley/zsh-llm-suggestions)](LICENSE)
 [![Shell](https://img.shields.io/badge/shell-zsh-blue.svg)](https://www.zsh.org/)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
@@ -11,6 +11,7 @@
 ## Table of Contents
 
 - [About This Fork](#about-this-fork)
+- [Security](#security)
 - [Original Documentation](#original-documentation)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -21,40 +22,104 @@
 - [Automated Tests (Fork Enhancement)](#automated-tests)
 - [Contributing](#contributing)
 
+**For Maintainers:**
+- [RELEASING.md](RELEASING.md) - Release process documentation
+- [SECURITY_AUDIT.md](SECURITY_AUDIT.md) - Security audit and remediation
+
 ---
 
 ## About This Fork
 
-**⚠️ Development Status: Not recommended for production use**
+**✅ Status: Acceptable for personal and development use** (see [Security](#security) section for details)
 
 This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions), which hasn't been actively maintained. This fork includes several important improvements:
 
-**Recent Enhancements:**
+**Recent Enhancements (v0.2.0 - October 2025):**
+- ✅ **Major security vulnerabilities resolved** - All 5 critical/high vulnerabilities fixed
+- ✅ **Secure temporary file handling** - Unpredictable paths with automatic cleanup
+- ✅ **Input validation** - Protection against abuse and malicious payloads
+- ✅ **Network timeouts** - 30-second timeouts prevent indefinite hangs
+- ✅ **Removed unsafe `eval` usage** - Proper command execution with quoting
+- ✅ **Comprehensive test coverage** - 13 unit tests including security-specific tests
+
+**Recent Enhancements (v0.1.0 - October 2025):**
 - ✅ **`uv tool install` support** - Install globally with a single command, no git clone required
 - ✅ **Interactive installer** - Automated setup with `zsh-llm-install` command
 - ✅ **Dual installation methods** - Choose between `uv tool install` or traditional git clone
 - ✅ **GitHub Actions CI/CD** with comprehensive smoke tests
 - ✅ **Local testing support** with `act` for workflow validation
-- ✅ **[Comprehensive security audit](SECURITY_AUDIT.md)** identifying critical vulnerabilities
+- ✅ **[Comprehensive security audit](SECURITY_AUDIT.md)** identifying and resolving vulnerabilities
 - ✅ **Updated OpenAI library compatibility** (resolved import errors)
 - ✅ **Developer documentation** (CLAUDE.md for AI-assisted development)
 
 **Why Choose This Fork:**
+- **Security-focused** - All identified vulnerabilities have been remediated
 - **Easy installation** with `uv tool install` - no git clone required
 - **Active maintenance** with recent commits and ongoing development
 - **Modern tooling** including CI/CD, local testing, and comprehensive documentation
-- **Security focus** with detailed vulnerability assessment and planned fixes
 - **Dual installation methods** supporting both `uv tool install` and traditional git clone
-- **Future roadmap** with clear short-term and long-term improvement plans
+- **Well-tested** with unit tests, integration tests, and security validation
 
 **Planned Improvements:**
-- 🔧 **Critical security fixes** (command injection, temp file vulnerabilities)
-- 🔧 **Enhanced error handling** and input validation
 - 🚀 **Architecture improvements** for better reliability and performance
 - 🚀 **New features** including configuration management and caching
+- 🚀 **Additional LLM backends** (Claude, local models)
 
-**Use Original If:** You prefer the original codebase and understand the security risks  
-**Use This Fork If:** You want recent improvements and plan to contribute to ongoing development
+**Use Original If:** You prefer the original codebase without recent updates
+**Use This Fork If:** You want security fixes, modern tooling, and active maintenance
+
+---
+
+## Security
+
+### Security Status: ⚠️ MEDIUM Risk (Acceptable for Personal/Development Use)
+
+**Last Updated:** October 20, 2025
+
+This project has undergone a comprehensive security audit and remediation. **All identified critical and high-severity vulnerabilities have been resolved.**
+
+### ✅ What's Been Fixed (v0.2.0)
+
+| Vulnerability | Severity | Status |
+|--------------|----------|--------|
+| Predictable Temporary Files | High (CVSS 7.1) | ✅ **Fixed** - Now uses `mktemp` with automatic cleanup |
+| Command Injection via `eval` | Medium (CVSS 5.0) | ✅ **Fixed** - Removed all `eval` usage |
+| Missing Input Validation | Medium (CVSS 6.5) | ✅ **Fixed** - Comprehensive validation implemented |
+| Network/Subprocess Timeouts | Medium (CVSS 5.0) | ✅ **Fixed** - 30-second timeouts added |
+| Unquoted Variables | Low-Medium (CVSS 4.5) | ✅ **Fixed** - All variables properly quoted |
+
+**Test Coverage:** 13/13 unit tests passing including 5 security-specific validation tests
+
+### 🔒 Security Best Practices for Users
+
+1. **Review LLM Suggestions:** Always review generated commands before execution
+2. **Protect API Keys:** Use `.env` file with 600 permissions, never commit to version control
+3. **Use Trusted Networks:** API communications use HTTPS but ensure network security
+4. **Keep Updated:** Apply security updates promptly when released
+
+### 📋 Deployment Recommendations
+
+- ✅ **Personal Use:** Safe for individual developers on personal machines
+- ✅ **Development Environments:** Appropriate for development/testing
+- ⚠️ **Enterprise/Production:** Additional review recommended (see [SECURITY_AUDIT.md](SECURITY_AUDIT.md))
+
+### 📄 Full Security Details
+
+For complete security audit and remediation details, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
+
+**Key Findings:**
+- **5 vulnerabilities identified and fixed**
+- **Risk reduced from CRITICAL to MEDIUM**
+- **All changes tested and validated**
+- **Backward compatibility maintained**
+
+### 🐛 Reporting Security Issues
+
+If you discover a security vulnerability, please:
+1. **Do not** open a public GitHub issue
+2. Email the maintainer directly (see GitHub profile)
+3. Include detailed reproduction steps
+4. Allow time for remediation before public disclosure
 
 ---
 

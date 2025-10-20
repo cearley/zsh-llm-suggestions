@@ -7,6 +7,38 @@ import re
 
 MISSING_PREREQUISITES = "zsh-llm-suggestions missing prerequisites:"
 
+# Security: Input validation constants
+MAX_INPUT_LENGTH = 2000  # Maximum characters to prevent abuse
+
+
+def validate_input(text):
+    """
+    Validate and sanitize user input for security.
+
+    Args:
+        text: User input string to validate
+
+    Returns:
+        Sanitized text string
+
+    Raises:
+        ValueError: If input fails validation
+    """
+    # Check for null bytes
+    if '\0' in text:
+        raise ValueError("Input contains null bytes")
+
+    # Check maximum length to prevent abuse
+    if len(text) > MAX_INPUT_LENGTH:
+        raise ValueError(f"Input too long (max {MAX_INPUT_LENGTH} characters, got {len(text)})")
+
+    # Strip dangerous control characters (except newlines, tabs, carriage returns)
+    # Keep printable characters and common whitespace
+    sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\r\t')
+
+    return sanitized.strip()
+
+
 def main():
 
   mode = sys.argv[1]
@@ -19,8 +51,15 @@ def main():
   except:
     print(f'echo "{MISSING_PREREQUISITES} Install GitHub CLI first by following https://github.com/cli/cli#installation"')
     return
-  
+
+  # Read and validate user input
   buffer = sys.stdin.read()
+  try:
+    buffer = validate_input(buffer)
+  except ValueError as e:
+    print(f'echo "ERROR: Invalid input: {e}"')
+    return
+
   env = None
   if mode == 'explain':
     env = os.environ.copy()
@@ -29,8 +68,15 @@ def main():
   else:
     command = ['gh', 'copilot', 'suggest', '-t', 'shell', buffer]
   process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
-  
-  output, error = process.communicate()
+
+  # Security: Add timeout to prevent indefinite hangs
+  try:
+    output, error = process.communicate(timeout=30.0)  # 30 second timeout
+  except subprocess.TimeoutExpired:
+    process.kill()
+    process.communicate()  # Clean up
+    print('echo "ERROR: Request timed out after 30 seconds"')
+    return
 
   if "Error: No valid OAuth token detected" in error:
     print(f"echo '{MISSING_PREREQUISITES} Authenticate with github first:' && \gh auth login --web -h github.com")
