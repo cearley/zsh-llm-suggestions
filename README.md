@@ -13,13 +13,14 @@
 - [About This Fork](#about-this-fork)
 - [Security](#security)
 - [Original Documentation](#original-documentation)
+- [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Warning](#warning)
 - [Supported LLMs](#supported-llms)
 - [Development Setup (Fork Enhancement)](#development-setup-fork-enhancement)
+- [Automated Tests (Fork Enhancement)](#automated-tests-fork-enhancement)
 - [Manual Testing (Fork Enhancement)](#manual-testing-fork-enhancement)
-- [Automated Tests (Fork Enhancement)](#automated-tests)
 - [Contributing](#contributing)
 
 **For Maintainers:**
@@ -67,59 +68,6 @@ This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.co
 
 **Use Original If:** You prefer the original codebase without recent updates
 **Use This Fork If:** You want security fixes, modern tooling, and active maintenance
-
----
-
-## Security
-
-### Security Status: ⚠️ MEDIUM Risk (Acceptable for Personal/Development Use)
-
-**Last Updated:** October 20, 2025
-
-This project has undergone a comprehensive security audit and remediation. **All identified critical and high-severity vulnerabilities have been resolved.**
-
-### ✅ What's Been Fixed (v0.2.0)
-
-| Vulnerability | Severity | Status |
-|--------------|----------|--------|
-| Predictable Temporary Files | High (CVSS 7.1) | ✅ **Fixed** - Now uses `mktemp` with automatic cleanup |
-| Command Injection via `eval` | Medium (CVSS 5.0) | ✅ **Fixed** - Removed all `eval` usage |
-| Missing Input Validation | Medium (CVSS 6.5) | ✅ **Fixed** - Comprehensive validation implemented |
-| Network/Subprocess Timeouts | Medium (CVSS 5.0) | ✅ **Fixed** - 30-second timeouts added |
-| Unquoted Variables | Low-Medium (CVSS 4.5) | ✅ **Fixed** - All variables properly quoted |
-
-**Test Coverage:** 13/13 unit tests passing including 5 security-specific validation tests
-
-### 🔒 Security Best Practices for Users
-
-1. **Review LLM Suggestions:** Always review generated commands before execution
-2. **Protect API Keys:** Use `.env` file with 600 permissions, never commit to version control
-3. **Use Trusted Networks:** API communications use HTTPS but ensure network security
-4. **Keep Updated:** Apply security updates promptly when released
-
-### 📋 Deployment Recommendations
-
-- ✅ **Personal Use:** Safe for individual developers on personal machines
-- ✅ **Development Environments:** Appropriate for development/testing
-- ⚠️ **Enterprise/Production:** Additional review recommended (see [SECURITY_AUDIT.md](SECURITY_AUDIT.md))
-
-### 📄 Full Security Details
-
-For complete security audit and remediation details, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
-
-**Key Findings:**
-- **5 vulnerabilities identified and fixed**
-- **Risk reduced from CRITICAL to MEDIUM**
-- **All changes tested and validated**
-- **Backward compatibility maintained**
-
-### 🐛 Reporting Security Issues
-
-If you discover a security vulnerability, please:
-1. **Do not** open a public GitHub issue
-2. Email the maintainer directly (see GitHub profile)
-3. Include detailed reproduction steps
-4. Allow time for remediation before public disclosure
 
 ---
 
@@ -547,3 +495,56 @@ If you encounter issues:
 
 - Press `Ctrl + D` or type `exit` to return to your normal shell
 - All temporary files are automatically cleaned up on exit
+
+## Security
+
+### Security Status: ⚠️ MEDIUM Risk (Acceptable for Personal/Development Use)
+
+**Last Updated:** October 20, 2025
+
+This project has undergone a comprehensive security audit and remediation. **All identified critical and high-severity vulnerabilities have been resolved.**
+
+### ✅ What's Been Fixed (v0.2.0)
+
+| Vulnerability | Severity | Status |
+|--------------|----------|--------|
+| Predictable Temporary Files | High (CVSS 7.1) | ✅ **Fixed** - Now uses `mktemp` with automatic cleanup |
+| Command Injection via `eval` | Medium (CVSS 5.0) | ✅ **Fixed** - Removed all `eval` usage |
+| Missing Input Validation | Medium (CVSS 6.5) | ✅ **Fixed** - Comprehensive validation implemented |
+| Network/Subprocess Timeouts | Medium (CVSS 5.0) | ✅ **Fixed** - 30-second timeouts added |
+| Unquoted Variables | Low-Medium (CVSS 4.5) | ✅ **Fixed** - All variables properly quoted |
+
+**Test Coverage:** 13/13 unit tests passing including 5 security-specific validation tests
+
+### 🔒 Security Best Practices for Users
+
+1. **Review LLM Suggestions:** Always review generated commands before execution
+2. **Protect API Keys:** Use `.env` file with 600 permissions, never commit to version control
+3. **Use Trusted Networks:** API communications use HTTPS but ensure network security
+4. **Keep Updated:** Apply security updates promptly when released
+
+### 📋 Deployment Recommendations
+
+- ✅ **Personal Use:** Safe for individual developers on personal machines
+- ✅ **Development Environments:** Appropriate for development/testing
+- ⚠️ **Enterprise/Production:** Additional review recommended (see [SECURITY_AUDIT.md](SECURITY_AUDIT.md))
+
+### 📄 Full Security Details
+
+For complete security audit and remediation details, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
+
+**Key Findings:**
+- **5 vulnerabilities identified and fixed**
+- **Risk reduced from CRITICAL to MEDIUM**
+- **All changes tested and validated**
+- **Backward compatibility maintained**
+
+### 🐛 Reporting Security Issues
+
+If you discover a security vulnerability, please:
+1. **Do not** open a public GitHub issue
+2. Email the maintainer directly (see GitHub profile)
+3. Include detailed reproduction steps
+4. Allow time for remediation before public disclosure
+
+---
