@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Installation wizard for zsh-llm-suggestions."""
 
+import json
 import logging
 import os
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, cast
@@ -153,6 +156,96 @@ def remove_block(config_content: str, block_name: str) -> str:
             new_lines.append(line)
 
     return "\n".join(new_lines)
+
+
+def get_latest_github_release() -> Optional[str]:
+    """Fetch the latest release tag from GitHub API.
+
+    Returns:
+        Latest release tag (e.g., "v0.3.2"), or None if fetch fails
+    """
+    try:
+        # GitHub API endpoint for latest release
+        url = "https://api.github.com/repos/cearley/zsh-llm-suggestions/releases/latest"
+
+        # Create request with timeout
+        req = urllib.request.Request(url)
+        req.add_header("Accept", "application/vnd.github+json")
+
+        # Fetch with 3-second timeout
+        with urllib.request.urlopen(req, timeout=3) as response:
+            data = json.loads(response.read().decode())
+            tag_name = data.get("tag_name")
+
+            if tag_name:
+                logger.debug(f"Fetched latest release from GitHub: {tag_name}")
+                return str(tag_name)
+
+            logger.warning("GitHub API response missing tag_name field")
+            return None
+
+    except urllib.error.URLError as e:
+        # Network error (offline, DNS failure, etc.)
+        logger.debug(f"Network error fetching latest release: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        # Invalid JSON response
+        logger.warning(f"Failed to parse GitHub API response: {e}", exc_info=True)
+        return None
+    except Exception as e:
+        # Unexpected error
+        logger.warning(f"Unexpected error fetching latest release: {e}", exc_info=True)
+        return None
+
+
+def parse_version(version_str: str) -> Optional[tuple[int, ...]]:
+    """Parse a version string into a comparable tuple.
+
+    Args:
+        version_str: Version string (e.g., "v0.3.1" or "0.3.1")
+
+    Returns:
+        Tuple of integers (e.g., (0, 3, 1)), or None if parsing fails
+    """
+    try:
+        # Strip 'v' prefix if present
+        clean_version = version_str.lstrip("v")
+
+        # Split on dots and convert to integers
+        parts = clean_version.split(".")
+        return tuple(int(part) for part in parts)
+
+    except (ValueError, AttributeError) as e:
+        logger.warning(f"Failed to parse version '{version_str}': {e}")
+        return None
+
+
+def compare_versions() -> tuple[bool, Optional[str]]:
+    """Compare local version with latest GitHub release.
+
+    Returns:
+        Tuple of (is_update_available, latest_version)
+        - is_update_available: True if newer version exists on GitHub
+        - latest_version: Latest version string, or None if check failed
+    """
+    # Fetch latest release from GitHub
+    latest_tag = get_latest_github_release()
+    if not latest_tag:
+        return (False, None)
+
+    # Parse versions
+    current = parse_version(__version__)
+    latest = parse_version(latest_tag)
+
+    if not current or not latest:
+        logger.warning("Failed to parse versions for comparison")
+        return (False, latest_tag)
+
+    # Compare versions
+    is_behind = current < latest
+    logger.debug(f"Version comparison: current={current}, latest={latest}, behind={is_behind}")
+
+    return (is_behind, latest_tag)
 
 
 def install() -> None:
@@ -451,6 +544,24 @@ def status() -> None:
     """Show installation status and version."""
     print(f"zsh-llm-suggestions {__version__}")
     print("=" * 50)
+    print()
+
+    # Check for updates
+    print("Version status:")
+    is_update_available, latest_version = compare_versions()
+
+    if latest_version is None:
+        # Could not fetch latest version (offline, network error, etc.)
+        print(f"  ℹ️  Current version: v{__version__}")
+        print("  ℹ️  Unable to check for updates (network error or offline)")
+    elif is_update_available:
+        # Update available
+        print(f"  ⚠️  Update available: {latest_version} (current: v{__version__})")
+        print("  💡 Upgrade with: uv tool upgrade zsh-llm-suggestions")
+    else:
+        # Up to date
+        print(f"  ✅ Up to date ({latest_version})")
+
     print()
 
     print("Command status:")
