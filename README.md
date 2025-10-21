@@ -53,7 +53,13 @@ source ~/.zshrc
 ```bash
 # Clone the repository
 git clone https://github.com/cearley/zsh-llm-suggestions.git ~/.local/share/zsh-llm-suggestions
+cd ~/.local/share/zsh-llm-suggestions
 
+# Option A: Use the interactive installer (requires uv)
+uv sync --dev  # Set up dependencies
+uv run zsh-llm-install  # Automatically configures source line and key bindings
+
+# Option B: Manual configuration
 # Add to ~/.zshrc
 echo 'source ~/.local/share/zsh-llm-suggestions/zsh-llm-suggestions.zsh' >> ~/.zshrc
 
@@ -76,15 +82,11 @@ source ~/.zshrc
    ```bash
    export OPENAI_API_KEY="your-api-key-here"
    ```
-3. Install the Python package:
-   ```bash
-   pip3 install openai
-   ```
 
-**Optional:** Install `pygments` for syntax-highlighted explanations:
-```bash
-pip3 install pygments
-```
+**Dependencies:** Python packages are automatically installed:
+- **uv tool install**: All dependencies included automatically
+- **git clone with uv**: Run `uv sync --dev` to install dependencies
+- **git clone without uv** (legacy): Manually install with `pip3 install openai pygments`
 
 ### GitHub Copilot Backend
 
@@ -134,9 +136,11 @@ tar -czf backup.tar.gz --exclude='*.log' ./data   # Press Ctrl+X then P → expl
 
 **Note:** These keybindings work universally across all terminals, including IDE terminals (PyCharm, VS Code, etc.).
 
-## Commands (uv installation only)
+## Commands
 
-When installed via `uv tool install`, these commands are available:
+### When installed via `uv tool install`
+
+These commands are available directly:
 
 ```bash
 zsh-llm-openai      # OpenAI backend (called by Ctrl+O)
@@ -144,6 +148,22 @@ zsh-llm-copilot     # GitHub Copilot backend (called by Ctrl+P)
 zsh-llm-install     # Interactive setup wizard
 zsh-llm-uninstall   # Remove zsh integration
 zsh-llm-status      # Check installation status and version
+```
+
+### When installed via git clone
+
+Use `uv run` to access the same commands:
+
+```bash
+cd ~/.local/share/zsh-llm-suggestions
+
+uv run zsh-llm-install    # Interactive setup wizard
+uv run zsh-llm-uninstall  # Remove zsh integration
+uv run zsh-llm-status     # Check installation status and version
+
+# Backend commands (automatically used by key bindings)
+uv run zsh-llm-openai     # OpenAI backend
+uv run zsh-llm-copilot    # GitHub Copilot backend
 ```
 
 ## Updating
@@ -170,6 +190,12 @@ uv tool uninstall zsh-llm-suggestions  # Remove the tool
 
 **Git clone installation:**
 ```bash
+cd ~/.local/share/zsh-llm-suggestions
+
+# Option A: Use the uninstaller (requires uv)
+uv run zsh-llm-uninstall  # Automatically removes source line and key bindings
+
+# Option B: Manual removal
 # Remove the source line from ~/.zshrc
 # Remove key binding lines from ~/.zshrc
 rm -rf ~/.local/share/zsh-llm-suggestions
