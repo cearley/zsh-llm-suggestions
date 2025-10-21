@@ -38,22 +38,21 @@ zsh_llm_suggestions_run_query() {
     # Use installed command (uv tool install method)
     echo -n "$query" | zsh-llm-copilot "$mode" > "$result_file"
   else
-    # Fall back to git clone method - use src/ package files
-    local backend_script=""
+    # Fall back to git clone method - run as Python module to support relative imports
+    local backend_module=""
     if [[ "$llm" == *"openai"* ]]; then
-      backend_script="$SCRIPT_DIR/src/zsh_llm_suggestions/openai_backend.py"
+      backend_module="zsh_llm_suggestions.openai_backend"
     else
-      backend_script="$SCRIPT_DIR/src/zsh_llm_suggestions/copilot_backend.py"
+      backend_module="zsh_llm_suggestions.copilot_backend"
     fi
 
-    local python_cmd
     if command -v uv &> /dev/null; then
-      python_cmd=(uv run --project $SCRIPT_DIR python)
+      # Use uv which handles the Python path automatically
+      echo -n "$query" | uv run --project "$SCRIPT_DIR" python -m "$backend_module" "$mode" > "$result_file"
     else
-      python_cmd=(python3)
+      # Use system Python with PYTHONPATH set to src/ directory
+      echo -n "$query" | PYTHONPATH="$SCRIPT_DIR/src:$PYTHONPATH" python3 -m "$backend_module" "$mode" > "$result_file"
     fi
-    # Security: removed eval, use proper quoting instead
-    echo -n "$query" | ${python_cmd[@]} "$backend_script" "$mode" > "$result_file"
   fi
 }
 
@@ -114,19 +113,19 @@ zsh_llm_completion() {
 SCRIPT_DIR=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 
 zsh_llm_suggestions_openai() {
-  zsh_llm_completion "$SCRIPT_DIR/zsh-llm-suggestions-openai.py" "generate"
+  zsh_llm_completion "openai" "generate"
 }
 
 zsh_llm_suggestions_github_copilot() {
-  zsh_llm_completion "$SCRIPT_DIR/zsh-llm-suggestions-github-copilot.py" "generate"
+  zsh_llm_completion "copilot" "generate"
 }
 
 zsh_llm_suggestions_openai_explain() {
-  zsh_llm_completion "$SCRIPT_DIR/zsh-llm-suggestions-openai.py" "explain"
+  zsh_llm_completion "openai" "explain"
 }
 
 zsh_llm_suggestions_github_copilot_explain() {
-  zsh_llm_completion "$SCRIPT_DIR/zsh-llm-suggestions-github-copilot.py" "explain"
+  zsh_llm_completion "copilot" "explain"
 }
 
 zle -N zsh_llm_suggestions_openai
