@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# Project Attribution and Evolution
+
+This codebase began as a fork of [zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions). It has since been extensively modernized and restructured, with most files rewritten or heavily modified. The core functionality, architecture, and user experience have diverged significantly from the original.
+
+**Attribution:**  
+The original author is credited, and the upstream license is retained. See `LICENSE` for details.
+
+**Current Maintainer:**  
+This project is now actively maintained and developed as a distinct codebase.
+
 ## Project Overview
 
 This is `zsh-llm-suggestions`, a zsh plugin that provides LLM-powered command suggestions and explanations directly in the terminal. Users type English descriptions and get shell commands suggested by OpenAI GPT-4 or GitHub Copilot.
@@ -88,6 +98,7 @@ The project follows modern Python development practices:
 - `TYPE_CHECKING` guards for conditional imports to avoid runtime overhead
 
 ### Code Quality
+- **Pre-commit hooks** automatically enforcing quality standards before commits
 - **Ruff linter** enforcing:
   - pycodestyle (PEP 8)
   - pyflakes (code analysis)
@@ -95,9 +106,19 @@ The project follows modern Python development practices:
   - flake8-bugbear (common bugs)
   - flake8-comprehensions (list/dict comprehensions)
   - pyupgrade (modern Python syntax)
+  - flake8-simplify (code simplification)
+  - flake8-use-pathlib (prefer pathlib over os.path)
+  - flake8-return (return statement best practices)
+  - flake8-datetimez (enforce timezone-aware datetimes)
+  - flake8-pie (miscellaneous lints)
+  - flake8-print (flag print statements in non-CLI code)
+- **pytest-randomly** randomizing test execution to catch test interdependencies
+- **Package hash verification** for security (uv.lock with hashes)
 - **100-character line length** for readability
 - **No bare `except` clauses** - always specify exception types
 - **Exception chaining** with `from e` or `from None` for proper error context
+- **Timezone-aware datetimes** using `datetime.now(timezone.utc)`
+- **pathlib for all file operations** instead of os.path
 
 ### Plugin Architecture Benefits
 - **Extensibility**: Easy to add new LLM backends (Claude, Gemini, Ollama, etc.)
@@ -252,8 +273,9 @@ See `RELEASING.md` for complete documentation on release workflows, troubleshoot
 ```
 zsh-llm-suggestions/
 ├── .venv/                           # uv-managed virtual environment (auto-created)
+├── .pre-commit-config.yaml          # Pre-commit hooks configuration
 ├── pyproject.toml                   # Project configuration (dynamic version, Ruff/mypy config)
-├── uv.lock                          # Dependency lockfile (auto-generated)
+├── uv.lock                          # Dependency lockfile with hashes (auto-generated)
 ├── zsh-llm-suggestions.zsh          # Symlink to src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh
 ├── src/
 │   └── zsh_llm_suggestions/
@@ -290,20 +312,30 @@ zsh-llm-suggestions/
 ### Development Workflow Commands
 
 **Setup:**
-- `uv sync --dev` - Install all dependencies including dev tools (ruff, mypy, pytest)
+- `uv sync --dev` - Install all dependencies including dev tools (ruff, mypy, pytest, pre-commit)
+- `uv run pre-commit install` - Install pre-commit hooks (recommended, runs checks automatically)
 
-**Type Checking & Linting:**
+**Pre-commit Hooks (Automated):**
+- `pre-commit run --all-files` - Manually run all pre-commit hooks
+- Pre-commit automatically runs on `git commit`:
+  - Ruff linting and formatting
+  - mypy type checking
+  - Unit tests (integration tests skipped)
+  - File quality checks (trailing whitespace, EOF, YAML/TOML syntax)
+
+**Type Checking & Linting (Manual):**
 - `uv run mypy src/zsh_llm_suggestions` - Run type checking (must pass with no errors)
 - `uv run ruff check src/` - Run linter
 - `uv run ruff check --fix src/` - Auto-fix linting issues
 - `uv run ruff format src/` - Format code
 
 **Testing:**
-- `uv run pytest -v` - Run all tests (integration auto-skipped without API key)
+- `uv run pytest -v` - Run all tests (integration auto-skipped without API key, randomized order)
 - `SKIP_INTEGRATION_TESTS=1 uv run pytest -v` - Force skip integration tests
 - `uv run pytest -q -k unit` - Run only unit tests (fast)
 - `uv run pytest -q -k integration` - Run only integration tests (requires OPENAI_API_KEY)
 - `uv run pytest --cov=. --cov-report=html` - Generate coverage report
+- `uv run pytest -p no:randomly` - Disable test randomization if needed
 - `./test-environment.sh` - Manual testing in isolated zsh session
 - `act --container-architecture linux/amd64` - Test GitHub Actions workflows locally
 
@@ -313,10 +345,12 @@ zsh-llm-suggestions/
 - Manual release: Use GitHub Actions workflow dispatch for `.github/workflows/manual-release.yml`
 - See `RELEASING.md` for complete release documentation
 
-**Pre-Commit Checklist:**
+**Pre-Commit Checklist (if not using hooks):**
 1. `uv run mypy src/zsh_llm_suggestions` (must pass)
 2. `uv run ruff check src/` (must pass)
 3. `SKIP_INTEGRATION_TESTS=1 uv run pytest -v` (all tests pass)
+
+**With pre-commit hooks installed, all checks run automatically on commit!**
 
 **Development Notes:**
 - `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`

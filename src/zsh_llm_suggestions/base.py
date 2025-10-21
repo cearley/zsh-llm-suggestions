@@ -84,7 +84,6 @@ class LLMBackend(ABC):
                    If success is True, error_message should be empty.
                    If success is False, error_message should contain user-facing error.
         """
-        pass
 
     @abstractmethod
     def generate(self, prompt: str) -> str:
@@ -100,7 +99,6 @@ class LLMBackend(ABC):
         Raises:
             Exception: If generation fails
         """
-        pass
 
     @abstractmethod
     def explain(self, command: str) -> str:
@@ -116,7 +114,6 @@ class LLMBackend(ABC):
         Raises:
             Exception: If explanation fails
         """
-        pass
 
     def run(self, mode: str) -> None:
         """

@@ -4,7 +4,7 @@
 import os
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -25,7 +25,7 @@ def get_shell_config():
     shell = os.environ.get('SHELL', '')
     if 'zsh' in shell:
         return Path.home() / ".zshrc"
-    elif 'bash' in shell:
+    if 'bash' in shell:
         return Path.home() / ".bashrc"
     return None
 
@@ -41,13 +41,12 @@ def ask_confirmation(message, default=False):
     """
     if HAS_QUESTIONARY:
         return questionary.confirm(message, default=default).ask()
-    else:
-        # Fallback to input()
-        default_str = "Y/n" if default else "y/N"
-        response = input(f"{message} [{default_str}]: ")
-        if not response:  # User pressed enter without typing
-            return default
-        return response.lower() in ['y', 'yes']
+    # Fallback to input()
+    default_str = "Y/n" if default else "y/N"
+    response = input(f"{message} [{default_str}]: ")
+    if not response:  # User pressed enter without typing
+        return default
+    return response.lower() in ['y', 'yes']
 
 def create_backup(config_file):
     """Create a timestamped backup of the config file.
@@ -62,7 +61,7 @@ def create_backup(config_file):
         return None
 
     try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         backup_path = config_file.parent / f"{config_file.name}.backup.{timestamp}"
         backup_path.write_text(config_file.read_text())
         return backup_path
@@ -92,11 +91,11 @@ def atomic_write_config(config_file, content):
             f.write(content)
 
         # Atomic replace (POSIX guarantees atomicity)
-        os.replace(temp_path, config_file)
+        Path(temp_path).replace(config_file)
     except Exception:
         # Clean up temp file on failure
         try:
-            os.unlink(temp_path)
+            Path(temp_path).unlink()
         except OSError:
             pass
         raise
@@ -135,7 +134,7 @@ def remove_block(config_content, block_name):
         if line.strip() == begin_marker:
             in_block = True
             continue
-        elif line.strip() == end_marker:
+        if line.strip() == end_marker:
             in_block = False
             continue
 

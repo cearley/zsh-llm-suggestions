@@ -70,8 +70,10 @@ dev = [
     "pygments>=2.19.2",
     "pytest>=8.3.5",
     "pytest-cov>=5.0.0",
+    "pytest-randomly>=3.15.0",
     "ruff>=0.8.0",
     "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
 ]
 test = [
     "pytest>=7.0.0",
@@ -113,10 +115,27 @@ select = [
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "DTZ", # flake8-datetimez
+    "PIE", # flake8-pie
+    "T20", # flake8-print
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
+    "E501",   # line too long (handled by formatter)
+    "RET504", # unnecessary assignment before return (false positive for multi-step transforms)
+    "SIM108", # use ternary operator (less readable for complex conditions)
+    "SIM105", # use contextlib.suppress (less readable than try/except)
+    "SIM102", # combine if statements (less readable for nested conditions)
 ]
+
+# Allow print() in user-facing CLI tools
+[tool.ruff.lint.per-file-ignores]
+"src/zsh_llm_suggestions/installer.py" = ["T201"]  # Allow print in installer (user-facing)
+"src/zsh_llm_suggestions/openai_backend.py" = ["T201"]  # Allow print in CLI entry point
+"src/zsh_llm_suggestions/copilot_backend.py" = ["T201"]  # Allow print in CLI entry point
+"src/zsh_llm_suggestions/base.py" = ["T201"]  # Allow print in base (error messages to user)
 
 [tool.ruff.format]
 quote-style = "double"
@@ -145,3 +164,6 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "questionary.*"
 ignore_missing_imports = true
+
+[tool.uv.pip]
+generate-hashes = true

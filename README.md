@@ -10,9 +10,19 @@ LLM-powered command suggestions and explanations for zsh. Type what you want to 
 
 ![Demo of zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions/blob/master/zsh-llm-suggestions.gif?raw=true)
 
-## About This Fork
+## Project Status
 
-This is a maintained fork of [stefanheule/zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions) with important security fixes and modern tooling.
+This project was originally forked from [zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions) by Stefan Heule. Since the fork, the codebase has undergone substantial modernization and restructuring, including:
+
+- Refactoring for modern Python (type hints, pathlib, exception handling)
+- Enhanced code quality tooling (Ruff, mypy, pytest-randomly, pre-commit)
+- Improved logging, error handling, and documentation standards
+- Modular architecture and expanded developer workflows
+
+As a result, the majority of the code, features, and design now reflect original work beyond the initial fork.
+
+**Attribution:**  
+This project retains the original license and credits the upstream author. See `LICENSE` for details.
 
 **Status:** Acceptable for personal and development use (see [Security](#security) section)
 
