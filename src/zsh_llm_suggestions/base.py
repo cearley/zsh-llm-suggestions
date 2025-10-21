@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 """Base module for LLM backend plugins."""
 
+import logging
 import os
 import sys
 from abc import ABC, abstractmethod
 from typing import cast
+
+# Configure logging based on environment variable
+LOG_LEVEL = os.getenv('ZSH_LLM_LOG_LEVEL', 'WARNING').upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Shared constants
 MISSING_PREREQUISITES = "zsh-llm-suggestions missing prerequisites:"
@@ -130,32 +140,42 @@ class LLMBackend(ABC):
             mode: Either 'generate' or 'explain'
         """
         # Validate mode
+        logger.debug(f"Backend run called with mode: {mode}")
         if mode not in ('generate', 'explain'):
+            logger.error(f"Invalid mode provided: {mode}")
             print(f"ERROR: something went wrong in zsh-llm-suggestions, please report a bug. Got unknown mode: {mode}")
             sys.exit(1)
 
         # Check prerequisites
+        logger.debug("Checking prerequisites")
         success, error_message = self.check_prerequisites()
         if not success:
+            logger.error(f"Prerequisites check failed: {error_message}")
             print(error_message)
             sys.exit(1)
 
         # Read and validate user input
+        logger.debug("Reading and validating user input")
         buffer = sys.stdin.read()
         try:
             buffer = validate_input(buffer)
+            logger.debug(f"Input validated successfully (length: {len(buffer)})")
         except ValueError as e:
+            logger.error(f"Input validation failed: {e}")
             print(f'echo "ERROR: Invalid input: {e}"')
             sys.exit(1)
 
         # Call appropriate method
         try:
+            logger.info(f"Executing {mode} with {self.__class__.__name__}")
             if mode == 'generate':
                 result = self.generate(buffer)
             else:  # mode == 'explain'
                 result = self.explain(buffer)
 
+            logger.debug(f"Successfully generated result (length: {len(result)})")
             print(result)
         except Exception as e:
+            logger.error(f"Request failed: {e}", exc_info=True)
             print(f'echo "ERROR: Request failed: {e}"')
             sys.exit(1)

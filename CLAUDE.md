@@ -148,6 +148,7 @@ Environment variables used by tests:
 - `OPENAI_API_KEY`: required for integration tests (can be populated from `.env`)
 - `SKIP_INTEGRATION_TESTS`: set to `1|true|yes` to skip integration tests
 - `ZSH_LLM_DISABLE_PYGMENTS`: set to `1|true|yes` to disable ANSI formatting for predictable test output
+- `ZSH_LLM_LOG_LEVEL`: set logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`; default: `WARNING`)
 
 ### GitHub Actions CI
 The project includes multiple GitHub Actions workflows:
@@ -221,6 +222,13 @@ This creates an isolated zsh session with:
 - **Input Validation**: All user input sanitized via `validate_input()` (null bytes, length limits, control characters)
 - **Type Safety**: Full type annotations throughout codebase, verified with mypy
 - **Code Quality**: Linted with Ruff (pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade)
+- **Structured Logging**: Comprehensive logging system for debugging and monitoring:
+  - Environment variable `ZSH_LLM_LOG_LEVEL` controls verbosity (DEBUG, INFO, WARNING, ERROR)
+  - Default level: WARNING (quiet operation, only errors/warnings shown)
+  - DEBUG level: Shows all backend operations, API calls, input validation, etc.
+  - INFO level: Shows major operations (backend execution, prerequisite checks)
+  - User-facing output (installer, status) remains as print() statements
+  - Backend errors logged with full stack traces via `exc_info=True`
 
 ### Backend Implementations
 - **OpenAI backend**:

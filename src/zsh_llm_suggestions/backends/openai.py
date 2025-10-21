@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """OpenAI backend for zsh-llm-suggestions."""
 
+import logging
 import os
 import re
 from typing import TYPE_CHECKING, Optional
@@ -9,6 +10,8 @@ from ..base import MISSING_PREREQUISITES, LLMBackend, highlight_explanation
 
 if TYPE_CHECKING:
     from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIBackend(LLMBackend):
@@ -24,18 +27,22 @@ class OpenAIBackend(LLMBackend):
         try:
             import openai
         except ImportError:
+            logger.error("OpenAI Python package not installed")
             return (False, f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && pip3 install openai')
 
         # Check if API key is set
         api_key = os.environ.get('OPENAI_API_KEY')
         if api_key is None:
+            logger.error("OPENAI_API_KEY environment variable not set")
             return (False,
                     f'echo "{MISSING_PREREQUISITES} OPENAI_API_KEY is not set." && '
                     f'export OPENAI_API_KEY="<copy from https://platform.openai.com/api-keys>"')
 
         # Initialize client
         import openai
+        logger.debug("Initializing OpenAI client")
         self.client = openai.OpenAI(api_key=api_key)
+        logger.info("OpenAI backend prerequisites satisfied")
 
         return (True, "")
 
@@ -52,6 +59,7 @@ You should only output the completed command, no need to include any other expla
         ]
 
         # Security: Add timeout to prevent indefinite hangs
+        logger.debug(f"Sending generate request to OpenAI (prompt length: {len(prompt)})")
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4-1106-preview",
@@ -61,11 +69,14 @@ You should only output the completed command, no need to include any other expla
                 frequency_penalty=0.0,
                 timeout=30.0  # 30 second timeout
             )
+            logger.debug("OpenAI API request successful")
         except Exception as e:
+            logger.error(f"OpenAI API request failed: {e}", exc_info=True)
             raise Exception(f"API request failed: {e}") from e
 
         content = response.choices[0].message.content
         if content is None:
+            logger.error("OpenAI API returned empty response")
             raise Exception("API returned empty response")
         result = content.strip()
 
@@ -91,6 +102,7 @@ You should only output the completed command, no need to include any other expla
         ]
 
         # Security: Add timeout to prevent indefinite hangs
+        logger.debug(f"Sending explain request to OpenAI (command length: {len(command)})")
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4-1106-preview",
@@ -100,11 +112,14 @@ You should only output the completed command, no need to include any other expla
                 frequency_penalty=0.0,
                 timeout=30.0  # 30 second timeout
             )
+            logger.debug("OpenAI API request successful")
         except Exception as e:
+            logger.error(f"OpenAI API request failed: {e}", exc_info=True)
             raise Exception(f"API request failed: {e}") from e
 
         content = response.choices[0].message.content
         if content is None:
+            logger.error("OpenAI API returned empty response")
             raise Exception("API returned empty response")
         result = content.strip()
 

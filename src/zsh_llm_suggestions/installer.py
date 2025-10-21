@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Installation wizard for zsh-llm-suggestions."""
 
+import logging
 import os
 import sys
 import tempfile
@@ -14,6 +15,8 @@ except ImportError:
     HAS_QUESTIONARY = False
 
 from . import __version__
+
+logger = logging.getLogger(__name__)
 
 
 def get_install_dir():
@@ -64,8 +67,10 @@ def create_backup(config_file):
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         backup_path = config_file.parent / f"{config_file.name}.backup.{timestamp}"
         backup_path.write_text(config_file.read_text())
+        logger.debug(f"Created backup: {backup_path}")
         return backup_path
     except Exception as e:
+        logger.warning(f"Failed to create backup of {config_file}: {e}", exc_info=True)
         print(f"⚠️  Warning: Could not create backup: {e}")
         return None
 
