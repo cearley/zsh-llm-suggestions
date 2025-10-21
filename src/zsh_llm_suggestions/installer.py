@@ -15,6 +15,7 @@ except ImportError:
 
 from . import __version__
 
+
 def get_install_dir():
     """Get installation directory."""
     return Path.home() / ".local" / "share" / "zsh-llm-suggestions"
@@ -96,7 +97,7 @@ def atomic_write_config(config_file, content):
         # Clean up temp file on failure
         try:
             os.unlink(temp_path)
-        except:
+        except OSError:
             pass
         raise
 
@@ -154,12 +155,8 @@ def install():
 
     # Find and copy zsh script from installed package data
     try:
-        if sys.version_info >= (3, 9):
-            import importlib.resources
-            script_content = importlib.resources.files('zsh_llm_suggestions.data').joinpath('zsh-llm-suggestions.zsh').read_text()
-        else:
-            import pkg_resources
-            script_content = pkg_resources.resource_string('zsh_llm_suggestions.data', 'zsh-llm-suggestions.zsh').decode('utf-8')
+        import importlib.resources
+        script_content = importlib.resources.files('zsh_llm_suggestions.data').joinpath('zsh-llm-suggestions.zsh').read_text()
     except Exception as e:
         print(f"❌ Error reading installed zsh script: {e}")
         print("   Make sure the package is installed correctly.")
@@ -180,7 +177,7 @@ def install():
             config_content = config_file.read_text()
         except Exception as e:
             print(f"❌ Error reading {config_file}: {e}")
-            print(f"   Please manually add this line to your shell config:")
+            print("   Please manually add this line to your shell config:")
             print(f"   {source_line}")
             source_added = False
         else:
@@ -271,7 +268,7 @@ def install():
             print(f"   source {config_file}")
     else:
         print("⚠️  Could not detect shell config file.")
-        print(f"   Please manually add this line to your ~/.zshrc or ~/.bashrc:")
+        print("   Please manually add this line to your ~/.zshrc or ~/.bashrc:")
         print(f"   source {script_path}")
 
     print()
@@ -336,8 +333,8 @@ def uninstall():
                         lines = config_content.split('\n')
                         new_lines = []
                         skip_next = False
-                        for i, line in enumerate(lines):
-                            if line.strip() == '# zsh-llm-suggestions' and i + 1 < len(lines) and source_line in lines[i + 1]:
+                        for _i, line in enumerate(lines):
+                            if line.strip() == '# zsh-llm-suggestions' and _i + 1 < len(lines) and source_line in lines[_i + 1]:
                                 skip_next = True
                                 continue
                             if skip_next:
@@ -386,7 +383,7 @@ def uninstall():
                         new_lines = []
                         in_binding_block = False
 
-                        for i, line in enumerate(lines):
+                        for _i, line in enumerate(lines):
                             # Check if this is the start of the key bindings block
                             if line.strip() == '# zsh-llm-suggestions key bindings':
                                 in_binding_block = True

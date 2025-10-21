@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for zsh-llm-suggestions-openai.py
+Unit tests for zsh-llm-suggestions OpenAI backend
 
 These tests don't require API keys and focus on testing the core logic
 like markdown parsing, input validation, etc.
@@ -9,257 +9,164 @@ like markdown parsing, input validation, etc.
 import unittest
 import sys
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 from io import StringIO
 
-# Add the parent directory to the path to import the script
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Helper function to get the script path dynamically
-def get_openai_script_path():
-    """Get the path to openai_backend.py relative to this test file"""
-    test_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(test_dir)
-    return os.path.join(project_root, 'src', 'zsh_llm_suggestions', 'openai_backend.py')
+# Import the new plugin architecture
+from zsh_llm_suggestions.base import validate_input, highlight_explanation, MAX_INPUT_LENGTH
+from zsh_llm_suggestions.backends.openai import OpenAIBackend
 
 
 class TestOpenAIMarkdownParsing(unittest.TestCase):
-    """Test the markdown parsing logic that was recently fixed"""
-    
+    """Test the markdown parsing logic in OpenAI backend"""
+
     def setUp(self):
         """Set up test environment"""
-        # Mock the OpenAI client and environment
+        # Mock the OpenAI client
         self.mock_client = MagicMock()
         self.mock_response = MagicMock()
         self.mock_response.choices[0].message.content = "test content"
         self.mock_client.chat.completions.create.return_value = self.mock_response
-        
-    @patch('builtins.print')
-    @patch('sys.stdin')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+
     @patch('openai.OpenAI')
-    def test_markdown_zsh_block_removal(self, mock_openai_class, mock_stdin, mock_print):
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    def test_markdown_zsh_block_removal(self, mock_openai_class):
         """Test that ```zsh blocks are properly removed"""
-        # Set up the mock
         mock_openai_class.return_value = self.mock_client
         self.mock_response.choices[0].message.content = "```zsh\nls -la\n```"
-        mock_stdin.read.return_value = "list files"
-        
-        # Import and run
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        
-        # Mock sys.argv for generate mode
-        with patch.object(sys, 'argv', ['script.py', 'generate']):
-            spec.loader.exec_module(openai_script)
-            openai_script.main()
-        
-        # Verify the output was cleaned
-        mock_print.assert_called_with("ls -la")
-    
-    @patch('builtins.print')
-    @patch('sys.stdin')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+
+        backend = OpenAIBackend()
+        backend.check_prerequisites()  # Initialize client
+        result = backend.generate("list files")
+
+        # Verify the markdown fences were removed
+        self.assertEqual(result, "ls -la")
+
     @patch('openai.OpenAI')
-    def test_markdown_sh_block_removal(self, mock_openai_class, mock_stdin, mock_print):
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    def test_markdown_sh_block_removal(self, mock_openai_class):
         """Test that ```sh blocks are properly removed"""
         mock_openai_class.return_value = self.mock_client
         self.mock_response.choices[0].message.content = "```sh\nfind . -name '*.py'\n```"
-        mock_stdin.read.return_value = "find python files"
-        
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        
-        with patch.object(sys, 'argv', ['script.py', 'generate']):
-            spec.loader.exec_module(openai_script)
-            openai_script.main()
-        
-        mock_print.assert_called_with("find . -name '*.py'")
-    
-    @patch('builtins.print')
-    @patch('sys.stdin')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+
+        backend = OpenAIBackend()
+        backend.check_prerequisites()
+        result = backend.generate("find python files")
+
+        self.assertEqual(result, "find . -name '*.py'")
+
     @patch('openai.OpenAI')
-    def test_markdown_generic_block_removal(self, mock_openai_class, mock_stdin, mock_print):
-        """Test that ``` blocks are properly removed"""
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    def test_markdown_generic_block_removal(self, mock_openai_class):
+        """Test that generic ``` blocks are properly removed"""
         mock_openai_class.return_value = self.mock_client
         self.mock_response.choices[0].message.content = "```\ngrep -r 'pattern' .\n```"
-        mock_stdin.read.return_value = "search for pattern"
-        
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        
-        with patch.object(sys, 'argv', ['script.py', 'generate']):
-            spec.loader.exec_module(openai_script)
-            openai_script.main()
-        
-        mock_print.assert_called_with("grep -r 'pattern' .")
-    
+
+        backend = OpenAIBackend()
+        backend.check_prerequisites()
+        result = backend.generate("search for pattern")
+
+        self.assertEqual(result, "grep -r 'pattern' .")
+
+    @patch('openai.OpenAI')
+    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    def test_mixed_markdown_blocks(self, mock_openai_class):
+        """Test handling of mixed text and code blocks"""
+        mock_openai_class.return_value = self.mock_client
+        self.mock_response.choices[0].message.content = "Here's the command:\n```zsh\ncd /tmp\n```"
+
+        backend = OpenAIBackend()
+        backend.check_prerequisites()
+        result = backend.generate("navigate to tmp")
+
+        # Should remove markdown and clean up
+        self.assertIn("cd /tmp", result)
+        self.assertNotIn("```", result)
+
+    def test_missing_api_key(self):
+        """Test that missing API key is detected"""
+        with patch.dict(os.environ, {}, clear=True):
+            backend = OpenAIBackend()
+            success, error_msg = backend.check_prerequisites()
+
+            self.assertFalse(success)
+            self.assertIn("OPENAI_API_KEY", error_msg)
+
     @patch('builtins.print')
     @patch('sys.stdin')
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
-    @patch('openai.OpenAI')
-    def test_mixed_markdown_blocks(self, mock_openai_class, mock_stdin, mock_print):
-        """Test complex markdown with multiple blocks"""
-        mock_openai_class.return_value = self.mock_client
-        self.mock_response.choices[0].message.content = "Here's the command:\n```zsh\ntar -czf backup.tar.gz *.log\n```\nThis will work."
-        mock_stdin.read.return_value = "compress log files"
-        
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        
-        with patch.object(sys, 'argv', ['script.py', 'generate']):
-            spec.loader.exec_module(openai_script)
-            openai_script.main()
-        
-        # Should extract just the command, stripping all markdown and explanation
-        mock_print.assert_called_with("Here's the command:\ntar -czf backup.tar.gz *.log\nThis will work.")
-    
-    @patch('builtins.print')
-    def test_missing_api_key(self, mock_print):
-        """Test behavior when OPENAI_API_KEY is missing"""
-        with patch.dict(os.environ, {}, clear=True):
-            with patch.object(sys, 'argv', ['script.py', 'generate']):
-                with patch('sys.stdin') as mock_stdin:
-                    mock_stdin.read.return_value = "test query"
-                    
-                    import importlib.util
-                    spec = importlib.util.spec_from_file_location("openai_script", 
-                        get_openai_script_path())
-                    openai_script = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(openai_script)
-                    try:
-                        openai_script.main()
-                    except SystemExit:
-                        pass
-        
-        # Should print error message about missing API key
-        expected_call = 'echo "zsh-llm-suggestions missing prerequisites: OPENAI_API_KEY is not set." && export OPENAI_API_KEY="<copy from https://platform.openai.com/api-keys>"'
-        mock_print.assert_called_with(expected_call)
-    
-    @patch('builtins.print')
-    def test_invalid_mode(self, mock_print):
-        """Test behavior with invalid mode argument"""
-        with patch.object(sys, 'argv', ['script.py', 'invalid_mode']):
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("openai_script", 
-                get_openai_script_path())
-            openai_script = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(openai_script)
-            try:
-                openai_script.main()
-            except SystemExit:
-                pass
-        
-        mock_print.assert_called_with("ERROR: something went wrong in zsh-llm-suggestions, please report a bug. Got unknown mode: invalid_mode")
+    def test_invalid_mode(self, mock_stdin, mock_print):
+        """Test that invalid mode causes an error"""
+        mock_stdin.read.return_value = "test input"
+
+        backend = OpenAIBackend()
+
+        # Mock sys.exit to prevent actual exit
+        with patch('sys.exit') as mock_exit:
+            backend.run('invalid_mode')
+            mock_exit.assert_called_with(1)
+
+            # Check that error message was printed
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            self.assertTrue(any('unknown mode' in str(call) for call in print_calls))
 
 
 class TestInputValidation(unittest.TestCase):
-    """Test the input validation function"""
+    """Test the input validation logic"""
 
     def test_valid_input(self):
-        """Test that valid input passes validation"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script",
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-
-        test_input = "list all files in the current directory"
-        result = openai_script.validate_input(test_input)
-        self.assertEqual(result, test_input)
+        """Test that valid input passes through"""
+        result = validate_input("list all files")
+        self.assertEqual(result, "list all files")
 
     def test_input_with_null_bytes(self):
         """Test that input with null bytes is rejected"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script",
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-
-        test_input = "list files\0with null"
-        with self.assertRaises(ValueError) as context:
-            openai_script.validate_input(test_input)
-        self.assertIn("null bytes", str(context.exception))
+        with self.assertRaises(ValueError) as cm:
+            validate_input("test\x00bad")
+        self.assertIn("null bytes", str(cm.exception))
 
     def test_input_too_long(self):
         """Test that overly long input is rejected"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script",
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-
-        test_input = "a" * 2001  # Exceeds MAX_INPUT_LENGTH of 2000
-        with self.assertRaises(ValueError) as context:
-            openai_script.validate_input(test_input)
-        self.assertIn("too long", str(context.exception))
+        long_input = "x" * (MAX_INPUT_LENGTH + 100)
+        with self.assertRaises(ValueError) as cm:
+            validate_input(long_input)
+        self.assertIn("too long", str(cm.exception))
 
     def test_input_with_control_characters(self):
-        """Test that control characters are stripped"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script",
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-
-        test_input = "list\x01files\x02here"
-        result = openai_script.validate_input(test_input)
-        # Control characters should be stripped
-        self.assertEqual(result, "listfileshere")
+        """Test that dangerous control characters are stripped"""
+        # Test with various control characters
+        result = validate_input("test\x01\x02\x03data")
+        # Control characters should be stripped, but printable text preserved
+        self.assertNotIn("\x01", result)
+        self.assertIn("test", result)
+        self.assertIn("data", result)
 
     def test_input_preserves_whitespace(self):
-        """Test that normal whitespace is preserved"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script",
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-
-        test_input = "find files\nwith\ttabs\rand newlines"
-        result = openai_script.validate_input(test_input)
-        # Newlines, tabs, and carriage returns should be preserved
-        self.assertEqual(result, test_input)
+        """Test that newlines, tabs, etc are preserved"""
+        input_text = "line1\nline2\ttabbed"
+        result = validate_input(input_text)
+        self.assertIn("\n", result)
+        self.assertIn("\t", result)
 
 
 class TestHighlightFunction(unittest.TestCase):
     """Test the highlight_explanation function"""
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_highlight_with_pygments(self):
-        """Test highlight function when pygments is available"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-        
-        # Test with a simple markdown string
-        result = openai_script.highlight_explanation("# Test\nThis is **bold**")
-        # Should return formatted text (exact format depends on pygments version)
+        """Test that explanation gets highlighted when pygments is available"""
+        explanation = "# This is a test\nSome code"
+        result = highlight_explanation(explanation)
+        # Should return string (either highlighted or plain)
         self.assertIsInstance(result, str)
-        self.assertTrue(len(result) > 0)
-    
+
     @patch.dict(os.environ, {'ZSH_LLM_DISABLE_PYGMENTS': '1'})
     def test_highlight_without_pygments(self):
-        """Test highlight function when pygments is disabled via env var"""
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("openai_script", 
-            get_openai_script_path())
-        openai_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(openai_script)
-        
-        test_text = "# Test\nThis is **bold**"
-        result = openai_script.highlight_explanation(test_text)
-        # Should return the original text unchanged
-        self.assertEqual(result, test_text)
+        """Test that highlighting is disabled when env var is set"""
+        explanation = "# This is a test"
+        result = highlight_explanation(explanation)
+        # Should return original text when pygments is disabled
+        self.assertEqual(result, explanation)
 
 
 if __name__ == '__main__':

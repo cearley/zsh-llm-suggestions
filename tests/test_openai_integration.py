@@ -64,21 +64,20 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_generate_simple_command(self):
         """Test generating a simple command via API"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
-        
         # Use uv if available, otherwise python3
         if os.system("command -v uv > /dev/null 2>&1") == 0:
-            cmd = ['uv', 'run', 'python', script_path, 'generate']
+            cmd = ['uv', 'run', 'python', '-m', 'zsh_llm_suggestions.openai_backend', 'generate']
         else:
-            cmd = ['python3', script_path, 'generate']
-        
+            cmd = ['python3', '-m', 'zsh_llm_suggestions.openai_backend', 'generate']
+
         process = subprocess.run(
             cmd,
             input="list files in current directory",
             text=True,
             capture_output=True,
-            timeout=30
+            timeout=30,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            env={**os.environ, 'PYTHONPATH': os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')}
         )
         
         self.assertEqual(process.returncode, 0, f"Script failed: {process.stderr}")
@@ -96,20 +95,19 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_explain_command(self):
         """Test explaining a command via API"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
-        
         if os.system("command -v uv > /dev/null 2>&1") == 0:
-            cmd = ['uv', 'run', 'python', script_path, 'explain']
+            cmd = ['uv', 'run', 'python', '-m', 'zsh_llm_suggestions.openai_backend', 'explain']
         else:
-            cmd = ['python3', script_path, 'explain']
-        
+            cmd = ['python3', '-m', 'zsh_llm_suggestions.openai_backend', 'explain']
+
         process = subprocess.run(
             cmd,
             input="ls -la",
             text=True,
             capture_output=True,
-            timeout=30
+            timeout=30,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            env={**os.environ, 'PYTHONPATH': os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')}
         )
         
         self.assertEqual(process.returncode, 0, f"Script failed: {process.stderr}")
@@ -123,21 +121,20 @@ class TestOpenAIIntegration(unittest.TestCase):
     
     def test_command_with_markdown_response(self):
         """Test that markdown responses are properly cleaned"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
-        
         if os.system("command -v uv > /dev/null 2>&1") == 0:
-            cmd = ['uv', 'run', 'python', script_path, 'generate']
+            cmd = ['uv', 'run', 'python', '-m', 'zsh_llm_suggestions.openai_backend', 'generate']
         else:
-            cmd = ['python3', script_path, 'generate']
-        
+            cmd = ['python3', '-m', 'zsh_llm_suggestions.openai_backend', 'generate']
+
         # Use a query that's likely to generate markdown
         process = subprocess.run(
             cmd,
             input="write a bash command to find all python files modified in the last 7 days",
             text=True,
             capture_output=True,
-            timeout=30
+            timeout=30,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            env={**os.environ, 'PYTHONPATH': os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')}
         )
         
         self.assertEqual(process.returncode, 0, f"Script failed: {process.stderr}")
@@ -195,44 +192,41 @@ class TestEnvironmentDetection(unittest.TestCase):
         if os.system("command -v uv > /dev/null 2>&1") != 0:
             self.skipTest("uv not available")
 
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
-        
         # Test without API key (should fail gracefully)
         env = os.environ.copy()
         env.pop('OPENAI_API_KEY', None)
-        
+
         process = subprocess.run(
-            ['uv', 'run', 'python', script_path, 'generate'],
+            ['uv', 'run', 'python', '-m', 'zsh_llm_suggestions.openai_backend', 'generate'],
             input="test command",
             text=True,
             capture_output=True,
             env=env,
             timeout=10
         )
-        
+
         # Should fail gracefully with helpful message
         self.assertNotEqual(process.returncode, 0)
         self.assertIn("OPENAI_API_KEY", process.stdout)
     
     def test_system_python_environment(self):
         """Test that script works with system python"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                 'src', 'zsh_llm_suggestions', 'openai_backend.py')
-        
         # Test without API key (should fail gracefully)
         env = os.environ.copy()
         env.pop('OPENAI_API_KEY', None)
-        
+        # Add current directory to PYTHONPATH so module can be imported
+        env['PYTHONPATH'] = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src')
+
         process = subprocess.run(
-            ['python3', script_path, 'generate'],
+            ['python3', '-m', 'zsh_llm_suggestions.openai_backend', 'generate'],
             input="test command",
             text=True,
             capture_output=True,
             env=env,
-            timeout=10
+            timeout=10,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
-        
+
         # Should either work or fail gracefully
         if process.returncode != 0:
             self.assertIn("OPENAI_API_KEY", process.stdout)

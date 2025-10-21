@@ -8,14 +8,26 @@ This is `zsh-llm-suggestions`, a zsh plugin that provides LLM-powered command su
 
 ## Architecture
 
-The project consists of several key components:
+The project uses a plugin architecture with fully typed Python 3.9+ code:
 
 1. **Main zsh script**: Core shell integration with functions for handling user input, displaying spinner animations, and managing the query/response flow
    - Source file: `src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh`
    - Symlink at root: `zsh-llm-suggestions.zsh` → `src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh`
-2. **LLM backends**: Two Python modules that interface with different LLM providers:
-   - `src/zsh_llm_suggestions/openai_backend.py`: Uses OpenAI's GPT-4-1106-preview model via the OpenAI Python SDK
-   - `src/zsh_llm_suggestions/copilot_backend.py`: Uses GitHub Copilot via the `gh copilot` CLI command
+
+2. **Plugin Architecture** (Python):
+   - **Base module** (`src/zsh_llm_suggestions/base.py`): Shared utilities and abstract base class
+     - `LLMBackend` ABC defining the plugin interface
+     - `validate_input()`: Input sanitization and security validation
+     - `highlight_explanation()`: Syntax highlighting for explanations
+   - **Backend implementations** (`src/zsh_llm_suggestions/backends/`):
+     - `openai.py`: OpenAIBackend using GPT-4-1106-preview via OpenAI Python SDK
+     - `copilot.py`: CopilotBackend using `gh copilot` CLI commands
+     - `__init__.py`: Backend registry
+   - **Entry points** (thin wrappers, ~20 lines each):
+     - `openai_backend.py`: CLI entry point for OpenAI backend
+     - `copilot_backend.py`: CLI entry point for Copilot backend
+   - **Installer** (`installer.py`): Interactive installation with atomic file operations and safety features
+
 3. **Demo files** (`demo/`): Example interactions showing the plugin in action
 
 ## Core Workflow
@@ -29,6 +41,10 @@ The project consists of several key components:
 7. For explanations (Ctrl+X then O/P), output is displayed below prompt instead
 
 ## Prerequisites and Setup
+
+### Python Version
+- **Minimum**: Python 3.9+
+- **Rationale**: Modern type annotation syntax (`tuple[...]`, `list[...]` instead of `Tuple`, `List`)
 
 ### Development Environment (Recommended: uv)
 This project uses `uv` for fast, reliable Python dependency management with isolated environments:
@@ -60,6 +76,36 @@ If you prefer system-wide installation:
 - `pip3 install openai`
 - `pip3 install pygments` (optional)
 - Export `OPENAI_API_KEY` in your shell
+
+## Code Quality Standards
+
+The project follows modern Python development practices:
+
+### Type Safety
+- **Full type annotations** on all functions and methods (Python 3.9+ syntax)
+- **mypy verification** required for all code changes (zero errors policy)
+- Built-in types (`tuple`, `list`, `dict`) instead of `typing.Tuple`, `typing.List`, `typing.Dict`
+- `TYPE_CHECKING` guards for conditional imports to avoid runtime overhead
+
+### Code Quality
+- **Ruff linter** enforcing:
+  - pycodestyle (PEP 8)
+  - pyflakes (code analysis)
+  - isort (import sorting)
+  - flake8-bugbear (common bugs)
+  - flake8-comprehensions (list/dict comprehensions)
+  - pyupgrade (modern Python syntax)
+- **100-character line length** for readability
+- **No bare `except` clauses** - always specify exception types
+- **Exception chaining** with `from e` or `from None` for proper error context
+
+### Plugin Architecture Benefits
+- **Extensibility**: Easy to add new LLM backends (Claude, Gemini, Ollama, etc.)
+- **Maintainability**: Shared code in `base.py` eliminates duplication (236 lines saved)
+- **Type Safety**: Abstract base class ensures all backends implement required methods
+- **Testing**: Backend classes can be imported and tested directly without subprocess overhead
+
+See `.serena/memories/modern_python_practices_implementation.md` for complete implementation details.
 
 ## Testing
 
@@ -139,13 +185,35 @@ This creates an isolated zsh session with:
 
 ## Key Implementation Details
 
+### Core Functionality
 - Uses temporary files (`/tmp/zsh-llm-suggestions-result`) to communicate between zsh and Python processes
 - Implements custom spinner animation while waiting for LLM responses
 - Handles edge cases like empty prompts, missing prerequisites, and API errors
 - Supports regenerating suggestions by pressing hotkey again when current buffer matches last result
-- Both backends parse and clean LLM responses to extract just the command or explanation text
-- OpenAI backend strips markdown code blocks from responses
-- GitHub Copilot backend uses complex regex patterns to parse the `gh copilot` CLI output
+
+### Plugin Architecture
+- **Abstract Base Class**: `LLMBackend` defines the plugin interface with type-safe methods:
+  - `check_prerequisites() -> tuple[bool, str]`: Validate backend requirements
+  - `generate(prompt: str) -> str`: Generate commands from natural language
+  - `explain(command: str) -> str`: Explain what a command does
+  - `run(mode: str) -> None`: Main entry point with validation and error handling
+- **Input Validation**: All user input sanitized via `validate_input()` (null bytes, length limits, control characters)
+- **Type Safety**: Full type annotations throughout codebase, verified with mypy
+- **Code Quality**: Linted with Ruff (pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade)
+
+### Backend Implementations
+- **OpenAI backend**:
+  - Strips markdown code blocks from GPT-4 responses
+  - Uses `# type: ignore[arg-type]` for OpenAI SDK message parameters
+  - Null-safe: Asserts client initialization and checks response content
+- **Copilot backend**:
+  - Uses complex regex patterns to parse `gh copilot` CLI output
+  - Subprocess-based with timeout protection (30s)
+- **Installer**:
+  - Atomic file writes using temp files + `os.replace()`
+  - Timestamped backups before modifications
+  - Block markers (BEGIN/END) for reliable insertion/removal
+  - Interactive prompts via questionary
 
 ## Release Management
 
@@ -184,15 +252,20 @@ See `RELEASING.md` for complete documentation on release workflows, troubleshoot
 ```
 zsh-llm-suggestions/
 ├── .venv/                           # uv-managed virtual environment (auto-created)
-├── pyproject.toml                   # Project configuration (dynamic version from __init__.py)
+├── pyproject.toml                   # Project configuration (dynamic version, Ruff/mypy config)
 ├── uv.lock                          # Dependency lockfile (auto-generated)
 ├── zsh-llm-suggestions.zsh          # Symlink to src/zsh_llm_suggestions/data/zsh-llm-suggestions.zsh
 ├── src/
 │   └── zsh_llm_suggestions/
 │       ├── __init__.py              # Package metadata with __version__ (single source of truth)
-│       ├── openai_backend.py        # OpenAI backend
-│       ├── copilot_backend.py       # GitHub Copilot backend
-│       ├── installer.py             # Interactive installer
+│       ├── base.py                  # Shared utilities and LLMBackend ABC (fully typed)
+│       ├── backends/                # Backend implementations (plugin architecture)
+│       │   ├── __init__.py          # Backend registry
+│       │   ├── openai.py            # OpenAIBackend implementation (fully typed)
+│       │   └── copilot.py           # CopilotBackend implementation (fully typed)
+│       ├── openai_backend.py        # OpenAI entry point (thin wrapper, ~20 lines)
+│       ├── copilot_backend.py       # Copilot entry point (thin wrapper, ~20 lines)
+│       ├── installer.py             # Interactive installer with atomic operations
 │       └── data/
 │           └── zsh-llm-suggestions.zsh  # Main zsh script (source file)
 ├── .github/
@@ -202,6 +275,9 @@ zsh-llm-suggestions/
 │       └── manual-release.yml       # Manual release workflow dispatch
 ├── test-environment.sh              # Comprehensive manual testing environment
 ├── tests/                           # Unit and integration tests
+│   ├── conftest.py                  # Test configuration (importlib preload)
+│   ├── test_openai_unit.py          # Unit tests (no API key required)
+│   └── test_openai_integration.py   # Integration tests (requires API key)
 ├── .env                             # API keys and environment variables (create from .env.example)
 ├── .env.example                     # Environment variable template
 ├── demo/                            # Example usage demonstrations
@@ -213,22 +289,38 @@ zsh-llm-suggestions/
 
 ### Development Workflow Commands
 
-**Setup & Testing:**
-- Setup: `uv sync --dev` (creates isolated environment)
-- Unit tests: `uv run pytest -q -k unit`
-- Integration tests: `uv run pytest -q -k integration` (requires OPENAI_API_KEY)
-- Skip integration: `SKIP_INTEGRATION_TESTS=1 uv run pytest -q`
-- Coverage: `uv run pytest --cov=. --cov-report=html`
-- Manual tests: `./test-environment.sh`
-- CI: `act --container-architecture linux/amd64` (local workflow testing)
+**Setup:**
+- `uv sync --dev` - Install all dependencies including dev tools (ruff, mypy, pytest)
+
+**Type Checking & Linting:**
+- `uv run mypy src/zsh_llm_suggestions` - Run type checking (must pass with no errors)
+- `uv run ruff check src/` - Run linter
+- `uv run ruff check --fix src/` - Auto-fix linting issues
+- `uv run ruff format src/` - Format code
+
+**Testing:**
+- `uv run pytest -v` - Run all tests (integration auto-skipped without API key)
+- `SKIP_INTEGRATION_TESTS=1 uv run pytest -v` - Force skip integration tests
+- `uv run pytest -q -k unit` - Run only unit tests (fast)
+- `uv run pytest -q -k integration` - Run only integration tests (requires OPENAI_API_KEY)
+- `uv run pytest --cov=. --cov-report=html` - Generate coverage report
+- `./test-environment.sh` - Manual testing in isolated zsh session
+- `act --container-architecture linux/amd64` - Test GitHub Actions workflows locally
 
 **Release:**
 - Update version: Edit `__version__` in `src/zsh_llm_suggestions/__init__.py`
-- Auto-release: Commit version change and push to master (after CI passes)
+- Auto-release: Commit version change and push to master (release triggers after CI passes)
 - Manual release: Use GitHub Actions workflow dispatch for `.github/workflows/manual-release.yml`
 - See `RELEASING.md` for complete release documentation
 
-Notes:
-- `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`.
-- The OpenAI backend honors `ZSH_LLM_DISABLE_PYGMENTS` to produce deterministic, uncolored output during tests.
-- When troubleshooting a workflow using `act`, you can cut down the output 'noise' by using the flag -q, --quiet to disable logging of output from steps.
+**Pre-Commit Checklist:**
+1. `uv run mypy src/zsh_llm_suggestions` (must pass)
+2. `uv run ruff check src/` (must pass)
+3. `SKIP_INTEGRATION_TESTS=1 uv run pytest -v` (all tests pass)
+
+**Development Notes:**
+- `tests/conftest.py` preloads `importlib` to avoid recursion issues when tests patch `builtins.__import__`
+- The OpenAI backend honors `ZSH_LLM_DISABLE_PYGMENTS` to produce deterministic, uncolored output during tests
+- The OpenAI backend uses `# type: ignore[arg-type]` for message parameters due to OpenAI SDK's complex TypedDict requirements
+- When troubleshooting workflows with `act`, use `-q` flag to reduce output noise
+- All Python code must maintain 100% mypy compliance and zero Ruff errors before committing
