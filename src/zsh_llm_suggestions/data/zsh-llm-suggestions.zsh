@@ -48,12 +48,12 @@ zsh_llm_suggestions_run_query() {
 
     local python_cmd
     if command -v uv &> /dev/null; then
-      python_cmd="uv run --project $SCRIPT_DIR python"
+      python_cmd=(uv run --project $SCRIPT_DIR python)
     else
-      python_cmd="python3"
+      python_cmd=(python3)
     fi
     # Security: removed eval, use proper quoting instead
-    echo -n "$query" | $python_cmd "$backend_script" "$mode" > "$result_file"
+    echo -n "$query" | ${python_cmd[@]} "$backend_script" "$mode" > "$result_file"
   fi
 }
 
