@@ -74,7 +74,19 @@ jobs:
         run: |
           # Start with the static template
           cat > release_notes.md << 'EOF'
-          ## Installation
+          ## Upgrading
+
+          ### Upgrade via uv (Recommended)
+          ```bash
+          uv tool upgrade zsh-llm-suggestions
+          ```
+
+          ### Upgrade via git clone
+          ```bash
+          cd ~/.local/share/zsh-llm-suggestions && git fetch && git checkout ${{ steps.get_version.outputs.tag }}
+          ```
+
+          ## Installation (New Users)
 
           ### Install via uv (Recommended)
           ```bash

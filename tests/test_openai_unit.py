@@ -6,15 +6,14 @@ These tests don't require API keys and focus on testing the core logic
 like markdown parsing, input validation, etc.
 """
 
-import unittest
-import sys
 import os
-from unittest.mock import patch, MagicMock, Mock
-from io import StringIO
+import unittest
+from unittest.mock import MagicMock, patch
+
+from zsh_llm_suggestions.backends.openai import OpenAIBackend
 
 # Import the new plugin architecture
-from zsh_llm_suggestions.base import validate_input, highlight_explanation, MAX_INPUT_LENGTH
-from zsh_llm_suggestions.backends.openai import OpenAIBackend
+from zsh_llm_suggestions.base import MAX_INPUT_LENGTH, highlight_explanation, validate_input
 
 
 class TestOpenAIMarkdownParsing(unittest.TestCase):
@@ -28,8 +27,8 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         self.mock_response.choices[0].message.content = "test content"
         self.mock_client.chat.completions.create.return_value = self.mock_response
 
-    @patch('openai.OpenAI')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch("openai.OpenAI")
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_markdown_zsh_block_removal(self, mock_openai_class):
         """Test that ```zsh blocks are properly removed"""
         mock_openai_class.return_value = self.mock_client
@@ -42,8 +41,8 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         # Verify the markdown fences were removed
         self.assertEqual(result, "ls -la")
 
-    @patch('openai.OpenAI')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch("openai.OpenAI")
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_markdown_sh_block_removal(self, mock_openai_class):
         """Test that ```sh blocks are properly removed"""
         mock_openai_class.return_value = self.mock_client
@@ -55,8 +54,8 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
 
         self.assertEqual(result, "find . -name '*.py'")
 
-    @patch('openai.OpenAI')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch("openai.OpenAI")
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_markdown_generic_block_removal(self, mock_openai_class):
         """Test that generic ``` blocks are properly removed"""
         mock_openai_class.return_value = self.mock_client
@@ -68,8 +67,8 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
 
         self.assertEqual(result, "grep -r 'pattern' .")
 
-    @patch('openai.OpenAI')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch("openai.OpenAI")
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_mixed_markdown_blocks(self, mock_openai_class):
         """Test handling of mixed text and code blocks"""
         mock_openai_class.return_value = self.mock_client
@@ -92,9 +91,9 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
             self.assertFalse(success)
             self.assertIn("OPENAI_API_KEY", error_msg)
 
-    @patch('builtins.print')
-    @patch('sys.stdin')
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
+    @patch("builtins.print")
+    @patch("sys.stdin")
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_invalid_mode(self, mock_stdin, mock_print):
         """Test that invalid mode causes an error"""
         mock_stdin.read.return_value = "test input"
@@ -102,13 +101,13 @@ class TestOpenAIMarkdownParsing(unittest.TestCase):
         backend = OpenAIBackend()
 
         # Mock sys.exit to prevent actual exit
-        with patch('sys.exit') as mock_exit:
-            backend.run('invalid_mode')
+        with patch("sys.exit") as mock_exit:
+            backend.run("invalid_mode")
             mock_exit.assert_called_with(1)
 
             # Check that error message was printed
             print_calls = [str(call) for call in mock_print.call_args_list]
-            self.assertTrue(any('unknown mode' in str(call) for call in print_calls))
+            self.assertTrue(any("unknown mode" in str(call) for call in print_calls))
 
 
 class TestInputValidation(unittest.TestCase):
@@ -160,7 +159,7 @@ class TestHighlightFunction(unittest.TestCase):
         # Should return string (either highlighted or plain)
         self.assertIsInstance(result, str)
 
-    @patch.dict(os.environ, {'ZSH_LLM_DISABLE_PYGMENTS': '1'})
+    @patch.dict(os.environ, {"ZSH_LLM_DISABLE_PYGMENTS": "1"})
     def test_highlight_without_pygments(self):
         """Test that highlighting is disabled when env var is set"""
         explanation = "# This is a test"
@@ -169,5 +168,5 @@ class TestHighlightFunction(unittest.TestCase):
         self.assertEqual(result, explanation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

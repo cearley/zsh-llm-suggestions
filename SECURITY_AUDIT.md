@@ -121,7 +121,7 @@ This security audit identified multiple critical vulnerabilities in the zsh-llm-
 
 ### 1. Command Injection (CVE-Level Severity)
 
-**Component:** `zsh-llm-suggestions.zsh`  
+**Component:** `zsh-llm-suggestions.zsh`
 **Risk:** Complete system compromise
 
 - **Issue:** Use of `eval` with user-controlled input enables arbitrary command execution
@@ -131,7 +131,7 @@ This security audit identified multiple critical vulnerabilities in the zsh-llm-
 
 ### 2. Predictable Temporary File Path
 
-**Component:** `zsh-llm-suggestions.zsh`  
+**Component:** `zsh-llm-suggestions.zsh`
 **Risk:** Information disclosure, race conditions
 
 - **Issue:** Fixed temporary file path `/tmp/zsh-llm-suggestions-result`
@@ -141,7 +141,7 @@ This security audit identified multiple critical vulnerabilities in the zsh-llm-
 
 ### 3. Insufficient Input Validation
 
-**Components:** All Python scripts  
+**Components:** All Python scripts
 **Risk:** API abuse, secondary injection
 
 - **Issue:** No validation of input length, content, or special characters

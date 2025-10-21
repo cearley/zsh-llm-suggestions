@@ -19,7 +19,8 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
-          - types-all
+          - openai>=1.0.0
+          - questionary>=2.0.0
         # Only check src/ directory to avoid test files
         files: ^src/
 
@@ -32,7 +33,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [commit]
+        stages: [pre-commit]
 
   # Standard pre-commit hooks for file quality
   - repo: https://github.com/pre-commit/pre-commit-hooks

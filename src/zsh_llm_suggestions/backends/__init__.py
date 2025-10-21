@@ -3,4 +3,4 @@
 from .copilot import CopilotBackend
 from .openai import OpenAIBackend
 
-__all__ = ['OpenAIBackend', 'CopilotBackend']
+__all__ = ["OpenAIBackend", "CopilotBackend"]

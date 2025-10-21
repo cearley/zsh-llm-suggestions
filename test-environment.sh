@@ -47,13 +47,13 @@ EOF
 
     # Source .env file and validate
     source "$ENV_FILE"
-    
+
     if [[ -z "$OPENAI_API_KEY" || "$OPENAI_API_KEY" == "your_openai_api_key_here" ]]; then
         echo -e "${RED}❌ OPENAI_API_KEY not properly set in $ENV_FILE${NC}"
         echo -e "   Please edit the .env file and set your actual API key, or export it in your shell.\n"
         exit 1
     fi
-    
+
     echo -e "   ${GREEN}✅ Found OPENAI_API_KEY in .env file${NC}"
     ENV_SOURCE=".env file"
 fi
@@ -65,7 +65,7 @@ echo -e "${BLUE}🔍 Checking dependencies...${NC}"
 if command -v uv &> /dev/null; then
     echo -e "   ${GREEN}✅ uv found - using isolated environment${NC}"
     UV_AVAILABLE=true
-    
+
     # Initialize uv project if .venv doesn't exist
     if [[ ! -d "$SCRIPT_DIR/.venv" ]]; then
         echo -e "${BLUE}🔧 Initializing uv environment...${NC}"
@@ -73,21 +73,21 @@ if command -v uv &> /dev/null; then
         uv sync --dev
         cd - > /dev/null
     fi
-    
+
     # Check if dependencies are available in uv environment
     if ! uv run python -c "import openai" &> /dev/null; then
         echo -e "${RED}❌ openai not available in uv environment${NC}"
         echo -e "   Run: uv sync"
         exit 1
     fi
-    
+
     # Check pygments in uv environment
     if uv run python -c "import pygments" &> /dev/null; then
         PYGMENTS_STATUS="${GREEN}✅ installed in uv environment${NC}"
     else
         PYGMENTS_STATUS="${YELLOW}⚠️  not installed in uv environment (explanations won't be highlighted)${NC}"
     fi
-    
+
     PYTHON_CMD="uv run python"
     echo -e "   python (uv): ${GREEN}✅ found${NC}"
     echo -e "   openai (uv): ${GREEN}✅ installed${NC}"
@@ -95,7 +95,7 @@ if command -v uv &> /dev/null; then
 else
     echo -e "${BLUE}📦 uv not found, using system python...${NC}"
     UV_AVAILABLE=false
-    
+
     # Check python3
     if ! command -v python3 &> /dev/null; then
         echo -e "${RED}❌ python3 not found${NC}"
@@ -116,7 +116,7 @@ else
     else
         PYGMENTS_STATUS="${YELLOW}⚠️  not installed (explanations won't be highlighted)${NC}"
     fi
-    
+
     PYTHON_CMD="python3"
     echo -e "   python3: ${GREEN}✅ found${NC}"
     echo -e "   openai: ${GREEN}✅ installed${NC}"
@@ -200,7 +200,7 @@ Usage Instructions:
 
 Example Commands to Try:
   - "list all files recursively"
-  - "find files modified in last 7 days"  
+  - "find files modified in last 7 days"
   - "count lines in all python files"
   - "compress all log files"
 

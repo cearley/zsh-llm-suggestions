@@ -33,7 +33,7 @@
 zsh_llm_suggestions_spinner() {
     local delay=0.1
     local spinstr='|/-\'
-    
+
     for ((i=0; i<20; i++)); do
         local temp=${spinstr#?}
         printf " [%c]" "$spinstr"
@@ -53,7 +53,7 @@ zsh_llm_suggestions_demo() {
   fi
 
   suggestion=$(cat $SCRIPT_DIR/demo/git-commits-explain)
-    
+
   if [[ $ZSH_LLM_SUGGESTIONS_DEMO_NR -eq 1 ]]; then
     suggestion=$(cat $SCRIPT_DIR/demo/git-commits)
   fi

@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This codebase began as a fork of [zsh-llm-suggestions](https://github.com/stefanheule/zsh-llm-suggestions). It has since been extensively modernized and restructured, with most files rewritten or heavily modified. The core functionality, architecture, and user experience have diverged significantly from the original.
 
-**Attribution:**  
+**Attribution:**
 The original author is credited, and the upstream license is retained. See `LICENSE` for details.
 
-**Current Maintainer:**  
+**Current Maintainer:**
 This project is now actively maintained and developed as a distinct codebase.
 
 ## Project Overview
@@ -76,7 +76,7 @@ uv sync --dev  # Creates .venv with openai + pygments automatically
   - `openai>=1.0.0` (required)
   - `pygments>=2.10.0` (optional, for syntax-highlighted explanations)
 
-### GitHub Copilot Backend  
+### GitHub Copilot Backend
 - **GitHub CLI**: `gh` command available
 - **Authentication**: `gh auth login --web -h github.com`
 - **Extension**: `gh extension install github/gh-copilot`
@@ -93,9 +93,12 @@ The project follows modern Python development practices:
 
 ### Type Safety
 - **Full type annotations** on all functions and methods (Python 3.9+ syntax)
+- **mypy strict mode enabled** - enforces strictest type checking rules
 - **mypy verification** required for all code changes (zero errors policy)
 - Built-in types (`tuple`, `list`, `dict`) instead of `typing.Tuple`, `typing.List`, `typing.Dict`
 - `TYPE_CHECKING` guards for conditional imports to avoid runtime overhead
+- `Optional[T]` for nullable types, `cast()` for type assertions when needed
+- All functions have explicit return type annotations (including `-> None`)
 
 ### Code Quality
 - **Pre-commit hooks** automatically enforcing quality standards before commits

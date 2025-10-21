@@ -8,11 +8,11 @@ from abc import ABC, abstractmethod
 from typing import cast
 
 # Configure logging based on environment variable
-LOG_LEVEL = os.getenv('ZSH_LLM_LOG_LEVEL', 'WARNING').upper()
+LOG_LEVEL = os.getenv("ZSH_LLM_LOG_LEVEL", "WARNING").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def validate_input(text: str) -> str:
         ValueError: If input fails validation
     """
     # Check for null bytes
-    if '\0' in text:
+    if "\0" in text:
         raise ValueError("Input contains null bytes")
 
     # Check maximum length to prevent abuse
@@ -44,7 +44,7 @@ def validate_input(text: str) -> str:
 
     # Strip dangerous control characters (except newlines, tabs, carriage returns)
     # Keep printable characters and common whitespace
-    sanitized = ''.join(char for char in text if char.isprintable() or char in '\n\r\t')
+    sanitized = "".join(char for char in text if char.isprintable() or char in "\n\r\t")
 
     return sanitized.strip()
 
@@ -60,14 +60,22 @@ def highlight_explanation(explanation: str) -> str:
         Highlighted text if pygments available, otherwise original text
     """
     # Respect env override to disable syntax highlighting (useful for testing or minimal environments)
-    if os.environ.get('ZSH_LLM_DISABLE_PYGMENTS', '').lower() in ('1', 'true', 'yes'):  # pragma: no cover
+    if os.environ.get("ZSH_LLM_DISABLE_PYGMENTS", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    ):  # pragma: no cover
         return explanation
 
     # If the import mechanism is being mocked (e.g., in tests), avoid importing and return raw text
     try:
         import builtins as _builtins
+
         # If __import__ is patched (e.g., MagicMock), bail out and return raw text
-        if getattr(_builtins.__import__, '__class__', type).__name__ != 'builtin_function_or_method':
+        if (
+            getattr(_builtins.__import__, "__class__", type).__name__
+            != "builtin_function_or_method"
+        ):
             return explanation
     except Exception:
         pass
@@ -76,7 +84,11 @@ def highlight_explanation(explanation: str) -> str:
         import pygments
         from pygments.formatters import TerminalFormatter
         from pygments.lexers import MarkdownLexer
-        return cast(str, pygments.highlight(explanation, MarkdownLexer(), TerminalFormatter(style='material')))
+
+        return cast(
+            str,
+            pygments.highlight(explanation, MarkdownLexer(), TerminalFormatter(style="material")),
+        )
     except ImportError:
         return explanation
 
@@ -141,9 +153,11 @@ class LLMBackend(ABC):
         """
         # Validate mode
         logger.debug(f"Backend run called with mode: {mode}")
-        if mode not in ('generate', 'explain'):
+        if mode not in ("generate", "explain"):
             logger.error(f"Invalid mode provided: {mode}")
-            print(f"ERROR: something went wrong in zsh-llm-suggestions, please report a bug. Got unknown mode: {mode}")
+            print(
+                f"ERROR: something went wrong in zsh-llm-suggestions, please report a bug. Got unknown mode: {mode}"
+            )
             sys.exit(1)
 
         # Check prerequisites
@@ -168,7 +182,7 @@ class LLMBackend(ABC):
         # Call appropriate method
         try:
             logger.info(f"Executing {mode} with {self.__class__.__name__}")
-            if mode == 'generate':
+            if mode == "generate":
                 result = self.generate(buffer)
             else:  # mode == 'explain'
                 result = self.explain(buffer)

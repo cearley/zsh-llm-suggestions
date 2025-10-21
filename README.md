@@ -21,7 +21,7 @@ This project was originally forked from [zsh-llm-suggestions](https://github.com
 
 As a result, the majority of the code, features, and design now reflect original work beyond the initial fork.
 
-**Attribution:**  
+**Attribution:**
 This project retains the original license and credits the upstream author. See `LICENSE` for details.
 
 **Status:** Acceptable for personal and development use (see [Security](#security) section)

@@ -6,7 +6,7 @@ import sys
 from .backends.openai import OpenAIBackend
 
 
-def main():
+def main() -> None:
     """Main entry point for OpenAI backend."""
     if len(sys.argv) < 2:
         print("ERROR: Mode argument required (generate or explain)")
@@ -17,5 +17,5 @@ def main():
     backend.run(mode)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

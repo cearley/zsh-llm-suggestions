@@ -28,18 +28,24 @@ class OpenAIBackend(LLMBackend):
             import openai
         except ImportError:
             logger.error("OpenAI Python package not installed")
-            return (False, f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && pip3 install openai')
+            return (
+                False,
+                f'echo "{MISSING_PREREQUISITES} Install OpenAI Python API." && pip3 install openai',
+            )
 
         # Check if API key is set
-        api_key = os.environ.get('OPENAI_API_KEY')
+        api_key = os.environ.get("OPENAI_API_KEY")
         if api_key is None:
             logger.error("OPENAI_API_KEY environment variable not set")
-            return (False,
-                    f'echo "{MISSING_PREREQUISITES} OPENAI_API_KEY is not set." && '
-                    f'export OPENAI_API_KEY="<copy from https://platform.openai.com/api-keys>"')
+            return (
+                False,
+                f'echo "{MISSING_PREREQUISITES} OPENAI_API_KEY is not set." && '
+                f'export OPENAI_API_KEY="<copy from https://platform.openai.com/api-keys>"',
+            )
 
         # Initialize client
         import openai
+
         logger.debug("Initializing OpenAI client")
         self.client = openai.OpenAI(api_key=api_key)
         logger.info("OpenAI backend prerequisites satisfied")
@@ -54,8 +60,8 @@ class OpenAIBackend(LLMBackend):
 You should only output the completed command, no need to include any other explanation."""
 
         messages = [
-            {"role": 'system', "content": system_message},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt},
         ]
 
         # Security: Add timeout to prevent indefinite hangs
@@ -67,7 +73,7 @@ You should only output the completed command, no need to include any other expla
                 temperature=0.2,
                 max_tokens=1000,
                 frequency_penalty=0.0,
-                timeout=30.0  # 30 second timeout
+                timeout=30.0,  # 30 second timeout
             )
             logger.debug("OpenAI API request successful")
         except Exception as e:
@@ -78,15 +84,15 @@ You should only output the completed command, no need to include any other expla
         if content is None:
             logger.error("OpenAI API returned empty response")
             raise Exception("API returned empty response")
-        result = content.strip()
+        result: str = content.strip()
 
         # Strip Markdown code fences cleanly (including the newline that follows/precedes)
         # Remove opening fences like ```zsh or ```sh
-        result = re.sub(r'(?m)^```(?:zsh|sh)?\s*\n?', '', result)
+        result = re.sub(r"(?m)^```(?:zsh|sh)?\s*\n?", "", result)
         # Remove closing fences ``` (and an optional preceding newline)
-        result = re.sub(r'(?m)\n?^```\s*$', '', result)
+        result = re.sub(r"(?m)\n?^```\s*$", "", result)
         # Collapse multiple blank lines resulting from fence removal
-        result = re.sub(r'\n{3,}', '\n\n', result).strip()
+        result = re.sub(r"\n{3,}", "\n\n", result).strip()
 
         return result
 
@@ -97,8 +103,8 @@ You should only output the completed command, no need to include any other expla
         system_message = """You are a zsh shell expert, please briefly explain how the given command works. Be as concise as possible. Use Markdown syntax for formatting."""
 
         messages = [
-            {"role": 'system', "content": system_message},
-            {"role": "user", "content": command}
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": command},
         ]
 
         # Security: Add timeout to prevent indefinite hangs
@@ -110,7 +116,7 @@ You should only output the completed command, no need to include any other expla
                 temperature=0.2,
                 max_tokens=1000,
                 frequency_penalty=0.0,
-                timeout=30.0  # 30 second timeout
+                timeout=30.0,  # 30 second timeout
             )
             logger.debug("OpenAI API request successful")
         except Exception as e:
@@ -121,7 +127,7 @@ You should only output the completed command, no need to include any other expla
         if content is None:
             logger.error("OpenAI API returned empty response")
             raise Exception("API returned empty response")
-        result = content.strip()
+        result: str = content.strip()
 
         # Apply syntax highlighting if available
         return highlight_explanation(result)
