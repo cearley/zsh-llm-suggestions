@@ -3,7 +3,16 @@
 
 import os
 import sys
+import tempfile
+from datetime import datetime
 from pathlib import Path
+
+try:
+    import questionary
+    HAS_QUESTIONARY = True
+except ImportError:
+    HAS_QUESTIONARY = False
+
 from . import __version__
 
 def get_install_dir():
@@ -18,6 +27,121 @@ def get_shell_config():
     elif 'bash' in shell:
         return Path.home() / ".bashrc"
     return None
+
+def ask_confirmation(message, default=False):
+    """Ask for user confirmation with questionary if available, otherwise input().
+
+    Args:
+        message: The question to ask
+        default: Default answer (True for yes, False for no)
+
+    Returns:
+        Boolean answer from user
+    """
+    if HAS_QUESTIONARY:
+        return questionary.confirm(message, default=default).ask()
+    else:
+        # Fallback to input()
+        default_str = "Y/n" if default else "y/N"
+        response = input(f"{message} [{default_str}]: ")
+        if not response:  # User pressed enter without typing
+            return default
+        return response.lower() in ['y', 'yes']
+
+def create_backup(config_file):
+    """Create a timestamped backup of the config file.
+
+    Args:
+        config_file: Path to the config file to backup
+
+    Returns:
+        Path to the backup file, or None if backup failed
+    """
+    if not config_file or not config_file.exists():
+        return None
+
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = config_file.parent / f"{config_file.name}.backup.{timestamp}"
+        backup_path.write_text(config_file.read_text())
+        return backup_path
+    except Exception as e:
+        print(f"⚠️  Warning: Could not create backup: {e}")
+        return None
+
+def atomic_write_config(config_file, content):
+    """Atomically write content to config file using temp file + rename.
+
+    Args:
+        config_file: Path to the config file
+        content: String content to write
+
+    Raises:
+        Exception: If write or rename fails
+    """
+    # Write to temporary file in same directory (ensures same filesystem)
+    fd, temp_path = tempfile.mkstemp(
+        dir=config_file.parent,
+        prefix=f".{config_file.name}.tmp.",
+        text=True
+    )
+
+    try:
+        with os.fdopen(fd, 'w') as f:
+            f.write(content)
+
+        # Atomic replace (POSIX guarantees atomicity)
+        os.replace(temp_path, config_file)
+    except Exception:
+        # Clean up temp file on failure
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+        raise
+
+def has_block_markers(config_content, block_name):
+    """Check if config has block markers for a given block name.
+
+    Args:
+        config_content: String content of config file
+        block_name: Name of the block (e.g., 'zsh-llm-suggestions')
+
+    Returns:
+        True if both BEGIN and END markers are present
+    """
+    begin_marker = f"# BEGIN {block_name}"
+    end_marker = f"# END {block_name}"
+    return begin_marker in config_content and end_marker in config_content
+
+def remove_block(config_content, block_name):
+    """Remove a block between BEGIN and END markers.
+
+    Args:
+        config_content: String content of config file
+        block_name: Name of the block to remove
+
+    Returns:
+        Updated config content with block removed
+    """
+    lines = config_content.split('\n')
+    new_lines = []
+    in_block = False
+    begin_marker = f"# BEGIN {block_name}"
+    end_marker = f"# END {block_name}"
+
+    for line in lines:
+        if line.strip() == begin_marker:
+            in_block = True
+            continue
+        elif line.strip() == end_marker:
+            in_block = False
+            continue
+
+        if not in_block:
+            new_lines.append(line)
+
+    return '\n'.join(new_lines)
 
 def install():
     """Interactive installer - copy zsh script and update shell config."""
@@ -51,29 +175,56 @@ def install():
     config_file = get_shell_config()
     if config_file and config_file.exists():
         source_line = f'source {script_path}'
-        config_content = config_file.read_text()
 
-        # Add source line
-        if source_line in config_content:
-            print(f"✅ Already configured in {config_file}")
-            source_added = True
+        try:
+            config_content = config_file.read_text()
+        except Exception as e:
+            print(f"❌ Error reading {config_file}: {e}")
+            print(f"   Please manually add this line to your shell config:")
+            print(f"   {source_line}")
+            source_added = False
         else:
-            response = input(f"Add source line to {config_file}? [y/N]: ")
-            if response.lower() in ['y', 'yes']:
-                with config_file.open('a') as f:
-                    f.write(f'\n# zsh-llm-suggestions\n{source_line}\n')
-                print(f"✅ Added to {config_file}")
+            # Check if already configured (either with or without block markers)
+            if has_block_markers(config_content, 'zsh-llm-suggestions') or source_line in config_content:
+                print(f"✅ Already configured in {config_file}")
                 source_added = True
             else:
-                print()
-                print("⚠️  Please manually add this line to your shell config:")
-                print(f"   {source_line}")
-                source_added = False
+                if ask_confirmation(f"Add source line to {config_file}?", default=False):
+                    # Create backup before modifying
+                    backup_path = create_backup(config_file)
+                    if backup_path:
+                        print(f"📋 Created backup: {backup_path}")
+
+                    try:
+                        # Add source line with block markers for easy removal
+                        new_content = config_content.rstrip('\n') + '\n\n'
+                        new_content += '# BEGIN zsh-llm-suggestions\n'
+                        new_content += f'{source_line}\n'
+                        new_content += '# END zsh-llm-suggestions\n'
+
+                        atomic_write_config(config_file, new_content)
+                        print(f"✅ Added to {config_file}")
+                        source_added = True
+                    except Exception as e:
+                        print(f"❌ Error updating {config_file}: {e}")
+                        if backup_path:
+                            print(f"   Backup available at: {backup_path}")
+                        source_added = False
+                else:
+                    print()
+                    print("⚠️  Please manually add this line to your shell config:")
+                    print(f"   {source_line}")
+                    source_added = False
 
         # Offer to configure key bindings
         if source_added:
             print()
-            config_content = config_file.read_text()  # Re-read to get updated content
+            try:
+                config_content = config_file.read_text()  # Re-read to get updated content
+            except Exception as e:
+                print(f"❌ Error reading {config_file}: {e}")
+                config_content = ""
+
             key_bindings = [
                 "bindkey '^o' zsh_llm_suggestions_openai",
                 "bindkey '^xo' zsh_llm_suggestions_openai_explain",
@@ -81,23 +232,34 @@ def install():
                 "bindkey '^xp' zsh_llm_suggestions_github_copilot_explain"
             ]
 
-            # Check if key bindings already exist
-            bindings_exist = all(binding in config_content for binding in key_bindings)
-
-            if bindings_exist:
+            # Check if key bindings already exist (either with or without block markers)
+            if has_block_markers(config_content, 'zsh-llm-suggestions-keybindings') or all(binding in config_content for binding in key_bindings):
                 print("✅ Key bindings already configured")
             else:
-                response = input(f"Configure key bindings in {config_file}? [y/N]: ")
-                if response.lower() in ['y', 'yes']:
-                    with config_file.open('a') as f:
-                        f.write('\n# zsh-llm-suggestions key bindings\n')
+                if ask_confirmation(f"Configure key bindings in {config_file}?", default=False):
+                    # Create backup before modifying
+                    backup_path = create_backup(config_file)
+                    if backup_path:
+                        print(f"📋 Created backup: {backup_path}")
+
+                    try:
+                        # Add key bindings with block markers for easy removal
+                        new_content = config_content.rstrip('\n') + '\n\n'
+                        new_content += '# BEGIN zsh-llm-suggestions-keybindings\n'
                         for binding in key_bindings:
-                            f.write(f'{binding}\n')
-                    print("✅ Configured key bindings:")
-                    print("   • Ctrl+O - OpenAI suggestions")
-                    print("   • Ctrl+X then O - OpenAI explanations")
-                    print("   • Ctrl+P - Copilot suggestions")
-                    print("   • Ctrl+X then P - Copilot explanations")
+                            new_content += f'{binding}\n'
+                        new_content += '# END zsh-llm-suggestions-keybindings\n'
+
+                        atomic_write_config(config_file, new_content)
+                        print("✅ Configured key bindings:")
+                        print("   • Ctrl+O - OpenAI suggestions")
+                        print("   • Ctrl+X then O - OpenAI explanations")
+                        print("   • Ctrl+P - Copilot suggestions")
+                        print("   • Ctrl+X then P - Copilot explanations")
+                    except Exception as e:
+                        print(f"❌ Error updating {config_file}: {e}")
+                        if backup_path:
+                            print(f"   Backup available at: {backup_path}")
                 else:
                     print()
                     print("⚠️  Please manually add key bindings to your shell config:")
@@ -150,30 +312,55 @@ def uninstall():
     config_file = get_shell_config()
     if config_file and config_file.exists():
         source_line = f'source {script_path}'
-        config_content = config_file.read_text()
 
-        if source_line in config_content:
-            response = input(f"Remove source line from {config_file}? [y/N]: ")
-            if response.lower() in ['y', 'yes']:
-                # Remove the source line and the comment above it
-                lines = config_content.split('\n')
-                new_lines = []
-                skip_next = False
-                for i, line in enumerate(lines):
-                    if line.strip() == '# zsh-llm-suggestions' and i + 1 < len(lines) and source_line in lines[i + 1]:
-                        skip_next = True
-                        continue
-                    if skip_next:
+        try:
+            config_content = config_file.read_text()
+        except Exception as e:
+            print(f"❌ Error reading {config_file}: {e}")
+            config_content = ""
+
+        # Check if source line exists (either with block markers or standalone)
+        if has_block_markers(config_content, 'zsh-llm-suggestions') or source_line in config_content:
+            if ask_confirmation(f"Remove source line from {config_file}?", default=False):
+                # Create backup before modifying
+                backup_path = create_backup(config_file)
+                if backup_path:
+                    print(f"📋 Created backup: {backup_path}")
+
+                try:
+                    # Try block-based removal first
+                    if has_block_markers(config_content, 'zsh-llm-suggestions'):
+                        new_content = remove_block(config_content, 'zsh-llm-suggestions')
+                    else:
+                        # Fallback: Remove the source line and the comment above it
+                        lines = config_content.split('\n')
+                        new_lines = []
                         skip_next = False
-                        continue
-                    if source_line not in line:
-                        new_lines.append(line)
+                        for i, line in enumerate(lines):
+                            if line.strip() == '# zsh-llm-suggestions' and i + 1 < len(lines) and source_line in lines[i + 1]:
+                                skip_next = True
+                                continue
+                            if skip_next:
+                                skip_next = False
+                                continue
+                            if source_line not in line:
+                                new_lines.append(line)
+                        new_content = '\n'.join(new_lines)
 
-                config_file.write_text('\n'.join(new_lines))
-                print(f"✅ Removed from {config_file}")
+                    atomic_write_config(config_file, new_content)
+                    print(f"✅ Removed from {config_file}")
+                except Exception as e:
+                    print(f"❌ Error updating {config_file}: {e}")
+                    if backup_path:
+                        print(f"   Backup available at: {backup_path}")
 
         # Offer to remove key bindings
-        config_content = config_file.read_text()  # Re-read to get updated content
+        try:
+            config_content = config_file.read_text()  # Re-read to get updated content
+        except Exception as e:
+            print(f"❌ Error reading {config_file}: {e}")
+            config_content = ""
+
         key_bindings = [
             "bindkey '^o' zsh_llm_suggestions_openai",
             "bindkey '^xo' zsh_llm_suggestions_openai_explain",
@@ -181,35 +368,47 @@ def uninstall():
             "bindkey '^xp' zsh_llm_suggestions_github_copilot_explain"
         ]
 
-        # Check if any key bindings exist
-        bindings_exist = any(binding in config_content for binding in key_bindings)
+        # Check if any key bindings exist (either with block markers or standalone)
+        if has_block_markers(config_content, 'zsh-llm-suggestions-keybindings') or any(binding in config_content for binding in key_bindings):
+            if ask_confirmation(f"Remove key bindings from {config_file}?", default=False):
+                # Create backup before modifying
+                backup_path = create_backup(config_file)
+                if backup_path:
+                    print(f"📋 Created backup: {backup_path}")
 
-        if bindings_exist:
-            response = input(f"Remove key bindings from {config_file}? [y/N]: ")
-            if response.lower() in ['y', 'yes']:
-                # Remove key bindings and the comment line
-                lines = config_content.split('\n')
-                new_lines = []
-                in_binding_block = False
-
-                for i, line in enumerate(lines):
-                    # Check if this is the start of the key bindings block
-                    if line.strip() == '# zsh-llm-suggestions key bindings':
-                        in_binding_block = True
-                        continue
-
-                    # Skip lines that are key bindings
-                    if any(binding in line for binding in key_bindings):
-                        continue
-
-                    # If we were in a binding block and hit a non-binding line, we're done
-                    if in_binding_block and line.strip() != '':
+                try:
+                    # Try block-based removal first
+                    if has_block_markers(config_content, 'zsh-llm-suggestions-keybindings'):
+                        new_content = remove_block(config_content, 'zsh-llm-suggestions-keybindings')
+                    else:
+                        # Fallback: Remove key bindings and the comment line
+                        lines = config_content.split('\n')
+                        new_lines = []
                         in_binding_block = False
 
-                    new_lines.append(line)
+                        for i, line in enumerate(lines):
+                            # Check if this is the start of the key bindings block
+                            if line.strip() == '# zsh-llm-suggestions key bindings':
+                                in_binding_block = True
+                                continue
 
-                config_file.write_text('\n'.join(new_lines))
-                print(f"✅ Removed key bindings from {config_file}")
+                            # Skip lines that are key bindings
+                            if any(binding in line for binding in key_bindings):
+                                continue
+
+                            # If we were in a binding block and hit a non-binding line, we're done
+                            if in_binding_block and line.strip() != '':
+                                in_binding_block = False
+
+                            new_lines.append(line)
+                        new_content = '\n'.join(new_lines)
+
+                    atomic_write_config(config_file, new_content)
+                    print(f"✅ Removed key bindings from {config_file}")
+                except Exception as e:
+                    print(f"❌ Error updating {config_file}: {e}")
+                    if backup_path:
+                        print(f"   Backup available at: {backup_path}")
 
     print()
     print("✅ Uninstallation complete!")
