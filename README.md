@@ -110,6 +110,42 @@ source ~/.zshrc
    gh extension install github/gh-copilot
    ```
 
+### Spinner Customization
+
+The plugin shows an animated spinner while waiting for LLM responses. You can customize the spinner style based on your terminal's Unicode support.
+
+**Available modes:**
+- `auto` (default) - Automatically detects Unicode support and chooses the best spinner
+- `unicode` - Uses Unicode Braille dots (⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏) - modern and smooth
+- `ascii` - Uses classic ASCII characters (|/-\) - works on all terminals
+
+**Configuration:**
+
+Add to your `~/.zshrc` to override the default:
+
+```bash
+# Force Unicode spinner (for modern terminals like iTerm2, VS Code, JetBrains)
+export ZSH_LLM_SPINNER_STYLE="unicode"
+
+# Force ASCII spinner (for older terminals or compatibility)
+export ZSH_LLM_SPINNER_STYLE="ascii"
+
+# Auto-detect (default - no configuration needed)
+export ZSH_LLM_SPINNER_STYLE="auto"
+```
+
+**Testing Unicode support:**
+
+```bash
+# Test if your terminal displays Unicode spinners correctly
+echo "Unicode test: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+# If you see boxes/diamonds instead of animated dots, use ASCII mode
+export ZSH_LLM_SPINNER_STYLE="ascii"
+```
+
+**Auto-detection:** The default `auto` mode checks your `LANG`, `LC_ALL`, and `LC_CTYPE` environment variables for UTF-8 support. Modern terminals (iTerm2, VS Code, JetBrains IDEs) typically support Unicode automatically.
+
 ## Usage
 
 ### Generate Commands

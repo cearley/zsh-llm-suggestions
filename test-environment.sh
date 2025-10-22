@@ -161,6 +161,10 @@ bindkey '^xp' zsh_llm_suggestions_github_copilot_explain # Ctrl+X then P for Git
 # Set up environment variables
 export OPENAI_API_KEY="$OPENAI_API_KEY"
 
+# Force ASCII spinner for test environment (better compatibility)
+# Users can change this to "unicode" if their terminal/font supports Braille characters
+export ZSH_LLM_SPINNER_STYLE="ascii"
+
 # Export variables for use in aliases
 export SCRIPT_DIR="${SCRIPT_DIR}"
 
@@ -181,6 +185,10 @@ cat << 'INSTRUCTIONS'
 
 🧪 zsh-llm-suggestions Test Environment Active
 ===============================================
+
+Spinner Mode: ASCII (|/-\) for maximum compatibility
+  To test Unicode spinner: export ZSH_LLM_SPINNER_STYLE="unicode"
+  To revert to ASCII: export ZSH_LLM_SPINNER_STYLE="ascii"
 
 Available Key Bindings:
   Ctrl+O        : OpenAI command suggestions

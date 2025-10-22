@@ -1,8 +1,28 @@
+# User can override spinner style in .zshrc: export ZSH_LLM_SPINNER_STYLE="unicode|ascii|auto"
+# Default: auto-detect Unicode support based on locale
+ZSH_LLM_SPINNER_STYLE=${ZSH_LLM_SPINNER_STYLE:-"auto"}
 
 zsh_llm_suggestions_spinner() {
     local pid=$1
     local delay=0.1
-    local spinstr='|/-\'
+
+    # Select spinner based on user config or auto-detection
+    case "$ZSH_LLM_SPINNER_STYLE" in
+        unicode)
+            local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'  # Unicode Braille dots (industry standard)
+            ;;
+        ascii)
+            local spinstr='|/-\'  # ASCII fallback (universal compatibility)
+            ;;
+        auto|*)
+            # Auto-detect Unicode support via locale
+            if [[ "$LANG" =~ UTF-8 ]] || [[ "$LC_ALL" =~ UTF-8 ]] || [[ "$LC_CTYPE" =~ UTF-8 ]]; then
+                local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'  # Unicode Braille dots
+            else
+                local spinstr='|/-\'  # ASCII fallback
+            fi
+            ;;
+    esac
 
     cleanup() {
       kill $pid
@@ -13,7 +33,7 @@ zsh_llm_suggestions_spinner() {
     echo -ne "\e[?25l"
     while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
         local temp=${spinstr#?}
-        printf " [%c]" "$spinstr"
+        printf " [%s]" "${spinstr:0:1}"  # Use string slicing for multi-byte UTF-8 support
         local spinstr=$temp${spinstr%"$temp"}
         sleep $delay
         printf "\b\b\b\b"
